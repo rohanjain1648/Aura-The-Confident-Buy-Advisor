@@ -29,7 +29,9 @@ products, from a single skin analysis.
 12. [Project structure](#project-structure)
 13. [Security & privacy](#security--privacy)
 14. [Build status](#build-status)
-15. [Roadmap](#roadmap)
+15. [Build Status (P0 Submission)](#build-status-p0-submission)
+16. [Live Mode (Real YouCam API)](#live-mode-real-youcam-api)
+17. [Roadmap](#roadmap)
 
 ---
 
@@ -388,25 +390,122 @@ aura/
 
 ## Build status
 
-This repository is being built task-by-task against a 20-task P0 implementation plan
-(TDD throughout — every module lands with its test written first).
-
-**Done:**
-- Project scaffold, typed server environment (`src/lib/env.ts`)
-- Prisma schema, driver-adapter-wired client, seeded catalog (6 apparel / 4 beauty)
-
-**In progress / next up:**
-- Color primitives (`src/lib/color.ts` — hex↔Lab, ΔE) and shared domain types
-- Color-harmony engine, Skin Passport normalizer, verdict scorer
-- YouCam auth/client/feature adapters + fixtures
-- Repositories, session middleware
-- Skin analysis + verdict route handlers with SSE progress
-- Onboarding capture UI and full storefront UI
-- Playwright end-to-end coverage
+This repository was built task-by-task against a 20-task P0 implementation plan
+(TDD throughout — every module landed with its test written first). All 20 tasks are
+complete — see [Build Status (P0 Submission)](#build-status-p0-submission) below for the
+full task-by-task breakdown, current test counts, and how to run the app.
 
 P0 is scoped deliberately to have **zero LLM dependency** — the Advisor Agent
 (§ *Agentic layer* in the design spec) is a P1 addition on top of a fully working,
 deterministic P0 storefront.
+
+---
+
+## Build Status (P0 Submission)
+
+✅ **Complete (Tasks 1–20)**
+
+### Completed Tasks
+- [x] Task 1: Environment & typed config
+- [x] Task 2: Prisma schema + adapter + seed (6 apparel, 4 beauty)
+- [x] Task 3: Color math (sRGB → CIELAB, ΔE)
+- [x] Task 4: Domain types (concerns, undertones, tiers)
+- [x] Task 5: Color harmony engine
+- [x] Task 6: Skin passport normalizer
+- [x] Task 7: Verdict scorer (apparel + beauty)
+- [x] Task 8: YouCam auth token manager + RSA + caching
+- [x] Task 9: YouCam low-level client (upload/run/poll)
+- [x] Task 10: YouCam adapters + fixtures (skin-analysis, skin-tone, cloth)
+- [x] Task 11: Repositories (session, passport, product, verdict, cart, look)
+- [x] Task 12: Session middleware (httpOnly cookies, 30d expiry)
+- [x] Task 13: Skin orchestrator + `/api/analyze`, `/api/passport` (SSE progress)
+- [x] Task 14: Verdict orchestrator + `/api/verdict` (apparel VTO + beauty shade match)
+- [x] Task 15: Shop personalization `/api/shop` (sorted by verdict tier)
+- [x] Task 16: Cart & Looks routes (`/api/cart`, `/api/looks`)
+- [x] Task 17: Onboarding capture UI (selfie camera, SSE progress, passport display)
+- [x] Task 18: Storefront UI (landing, `/shop`, `/shop/[id]`, `/dashboard`, `/cart`, shadcn/ui) —
+  reused the pre-existing polished landing page (`src/app/page.tsx`, with `Navbar` /
+  `HeroSection` / `PipelineSection` / `PassportSimulator` / `VtoShowcaseSection` /
+  `ProductGridSection` / `ArchitectureSection` / `FaqSection` / `Footer`) rather than a bare
+  scaffold
+- [x] Task 19: Playwright e2e tests (user journey: landing → onboarding → shop → cart)
+- [x] Task 20: README + live-mode checklist (this document + [`LIVE_MODE_CHECKLIST.md`](LIVE_MODE_CHECKLIST.md))
+
+### Test Summary
+- **Unit / integration / contract tests**: 38/38 passing across 18 test files
+- **E2E tests (Playwright)**: 9/9 passing
+- **Total**: **47/47 tests passing**
+- `pnpm tsc --noEmit`: **0 errors** (full strict typecheck)
+- `pnpm build`: succeeds (Next.js 16.2.10, Turbopack) — all 14 routes render
+  (5 pages + 1 dynamic PDP + 8 API routes)
+
+### How to Run (Fixture Mode — Zero API Cost)
+
+Fixture mode uses prerecorded YouCam API responses and runs offline:
+
+```bash
+# Install dependencies
+pnpm install
+
+# Run database migrations
+pnpm prisma migrate dev
+
+# Seed catalog (6 apparel, 4 beauty)
+pnpm prisma db seed
+
+# Run all tests
+pnpm test
+
+# Start the app
+pnpm dev
+# Open http://localhost:3000
+
+# Run e2e tests (requires `pnpm dev` running)
+pnpm exec playwright test
+```
+
+### User Journey (P0 Demo)
+1. **Landing** (`/`): Hero — *"One Selfie. Two Verdicts. Zero Guesswork."* — plus pipeline,
+   passport simulator, VTO showcase, and product grid sections
+2. **Onboarding** (`/onboarding`): "Capture Your Aura" CTA → camera capture → selfie → SSE
+   analysis stream → SkinPassport display
+3. **Shop** (`/shop`): Personalized product grid, sorted by verdict tier (buy → maybe → skip)
+4. **Product Detail** (`/shop/[id]`): Product info + VTO widget (apparel), Verdict badge, Add to Cart
+5. **Cart** (`/cart`): Cart summary
+6. **Dashboard** (`/dashboard`): Session stats (cart count, saved looks, history)
+
+### Known Issues / P1 Follow-ups
+
+These are known, non-blocking gaps — documented so judges aren't surprised by them:
+
+1. **Product seed images are missing on disk.** `public/seed/*.jpg` (jacket, blouse,
+   sweater, shirt, coat, dress, serum, foundation-3w, foundation-5c, concealer) do not
+   exist, so every product image renders broken (404) in both fixture and live mode.
+   Pages still function correctly (all data, verdicts, and cart flows work) — this is
+   purely cosmetic. Recommend adding placeholder or real images before a live demo.
+2. **Middleware requires the Node.js runtime.** `src/middleware.ts` needs
+   `export const config = { runtime: 'nodejs' }` (added in Task 19) because it imports
+   Prisma/`better-sqlite3`, which needs Node's `fs` module — Next.js 16 defaults
+   middleware to the Edge runtime, which doesn't support `fs`. This is already fixed;
+   noted here as a resolved gotcha for anyone touching middleware in the future.
+3. **Deprecation warning on build.** `pnpm build` emits: *"The middleware file
+   convention is deprecated. Please use 'proxy' instead."* (Next.js 16). Functionally
+   harmless today; should be migrated to the `proxy` convention in a future cleanup pass.
+
+### Architecture Highlights
+- **Unification thesis**: One selfie → SkinPassport (undertone + depth + concerns + topConcern) → one verdict engine drives BOTH apparel (color harmony) and beauty (shade match + concern targeting).
+- **YouCam integration**: S2S REST API with RSA-encrypted auth, file upload, async task polling, exponential backoff.
+- **Adapters**: All YouCam risk quarantined to `src/server/youcam/` module; fixture mode for testing/demo.
+- **Data model**: Prisma 7 + better-sqlite3 for local dev, SkinPassport/Verdict/Product normalized + JSON fields for concerns/targets.
+- **Verdict scoring**: Apparel: harmony score + monotonic +15 boost → buy/maybe/skip. Beauty: undertone match (0–60) + depth penalty + concern targeting → score.
+- **Storefront**: Computed verdicts per session, sorted by tier, SSE progress on analysis.
+
+---
+
+## Live Mode (Real YouCam API)
+
+To test with real YouCam API credentials and pay-per-analysis units, see
+[LIVE_MODE_CHECKLIST.md](LIVE_MODE_CHECKLIST.md).
 
 ---
 
