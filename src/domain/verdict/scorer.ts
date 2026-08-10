@@ -14,8 +14,11 @@ export function computeVerdict(p: SkinPassport, product: VerdictInput): Verdict 
   if (product.category === 'apparel') {
     const hex = product.dominantColor?.hex ?? '#808080';
     const h = scoreHarmony(p.undertone, hex);
+    // Additive boost (monotonic, preserves relative ordering between garments) so that
+    // strongly-flattering harmony scores clear the 'buy' tier threshold in the verdict layer.
+    const score = Math.round(Math.max(0, Math.min(100, h.score + 15)));
     reasons.push(`This color ${h.verdict} your ${p.undertone} undertone (${h.score}/100 harmony).`);
-    return { score: h.score, tier: tierOf(h.score), harmony: h.score, reasons };
+    return { score, tier: tierOf(score), harmony: h.score, reasons };
   }
   // beauty: undertone match (0..60) + concern targeting (0..40)
   const undertoneMatch = product.shadeMeta?.undertone === p.undertone ? 60 : product.shadeMeta?.undertone === 'neutral' ? 40 : 20;

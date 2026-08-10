@@ -1,0 +1,12 @@
+{
+  "scores": {
+    "redness": 72,
+    "oiliness": 40,
+    "spots": 12,
+    "texture": 55,
+    "darkCircles": 30,
+    "pores": 25,
+    "wrinkles": 10,
+    "acne": 18
+  }
+}
