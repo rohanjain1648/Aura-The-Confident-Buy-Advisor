@@ -1,0 +1,71 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Session {
+  id         String       @id
+  passport   SkinPassport?
+  verdicts   Verdict[]
+  cartItems  CartItem[]
+  savedLooks SavedLook[]
+  createdAt  DateTime     @default(now())
+}
+
+model SkinPassport {
+  id              String   @id @default(cuid())
+  sessionId       String   @unique
+  session         Session  @relation(fields: [sessionId], references: [id])
+  undertone       String
+  toneDepth       Int
+  concerns        Json
+  foundationShade String?
+  createdAt       DateTime @default(now())
+}
+
+model Product {
+  id              String  @id @default(cuid())
+  category        String
+  name            String
+  brand           String
+  price           Int
+  imageUrl        String
+  garmentImageUrl String?
+  dominantColor   Json?
+  shadeMeta       Json?
+  targetsConcerns Json?
+}
+
+model Verdict {
+  id             String   @id @default(cuid())
+  sessionId      String
+  productId      String
+  score          Int
+  tier           String
+  harmony        Int?
+  shadeMatch     Int?
+  vtoImageUrl    String?
+  reasons        Json
+  nextBestAction String?
+  createdAt      DateTime @default(now())
+  session        Session  @relation(fields: [sessionId], references: [id])
+}
+
+model CartItem {
+  id        String  @id @default(cuid())
+  sessionId String
+  productId String
+  session   Session @relation(fields: [sessionId], references: [id])
+}
+
+model SavedLook {
+  id          String   @id @default(cuid())
+  sessionId   String
+  productId   String
+  vtoImageUrl String
+  createdAt   DateTime @default(now())
+  session     Session  @relation(fields: [sessionId], references: [id])
+}
