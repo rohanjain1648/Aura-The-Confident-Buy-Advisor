@@ -1,10 +1,14 @@
 # How We Built Aura: Unifying Skin AI and Virtual Apparel Try-On Behind One Decision Engine
 
-> **Subtitle**: Eliminating e-commerce return anxiety by combining Perfect Corp YouCam S2S REST APIs, CIELAB $\Delta E$ color science, Next.js 16, and persistent Skin Passports.
+*Eliminating e-commerce return anxiety by combining Perfect Corp YouCam S2S REST APIs, CIELAB $\Delta E$ color science, Next.js 16, and persistent Skin Passports.*
 
 ---
 
-![Aura Header](https://raw.githubusercontent.com/rohanjain1648/Aura-The-Confident-Buy-Advisor/main/public/next.svg)
+⏱ **7 min read** · 💡 **Topics**: `Artificial Intelligence`, `Web Development`, `E-Commerce`, `TypeScript`, `Next.js`
+
+---
+
+![Aura — The Confident-Buy Advisor Banner](https://raw.githubusercontent.com/rohanjain1648/Aura-The-Confident-Buy-Advisor/main/public/next.svg)
 
 Online retail has a multi-hundred-billion-dollar elephant in the room: **return rates**. 
 
@@ -218,7 +222,7 @@ Aura P0 delivers a fully functional, zero-guesswork decision engine. Looking for
 
 ---
 
-## Summary & Links
+## Conclusion & Links
 
 Aura proves that when skin AI, tone analysis, and Virtual Try-On share a single unified context, e-commerce shopping transforms from guesswork into confidence.
 
@@ -226,4 +230,10 @@ Aura proves that when skin AI, tone analysis, and Virtual Try-On share a single 
 - 🚀 **Live Demo**: [aura-confident-buy.vercel.app](https://aura-confident-buy.vercel.app)
 - 🏆 **Hackathon Track**: Perfect Corp YouCam API Hackathon (Combined Track)
 
-*Built with Next.js 16, TypeScript, YouCam S2S REST APIs, Prisma 7, Tailwind CSS v4, Vitest, and Playwright.*
+---
+
+### **Enjoyed this article?**
+If you found this technical deep-dive helpful:
+- 👏 **Give it 50 claps on Medium!**
+- 🌟 **Star the repository on GitHub**: [rohanjain1648/Aura-The-Confident-Buy-Advisor](https://github.com/rohanjain1648/Aura-The-Confident-Buy-Advisor)
+- 💬 **Leave a comment below** with your thoughts on CIELAB color harmony and unified e-commerce AI decision engines!
