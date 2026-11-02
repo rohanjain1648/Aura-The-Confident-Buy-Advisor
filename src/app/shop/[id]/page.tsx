@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import VerdictBadge from '@/components/VerdictBadge';
+import AdvisorPanel from '@/components/AdvisorPanel';
 import type { Verdict } from '@/domain/verdict/scorer';
 
 interface ProductDetail {
@@ -32,6 +33,7 @@ export default function ProductDetailPage() {
   const [product, setProduct] = useState<ProductDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [vtoLoading, setVtoLoading] = useState(false);
+  const [vtoError, setVtoError] = useState<string | null>(null);
 
   useEffect(() => {
     // No dedicated /api/product/[id] route exists; fetch the personalized shop
@@ -51,6 +53,7 @@ export default function ProductDetailPage() {
 
   const generateVto = async () => {
     setVtoLoading(true);
+    setVtoError(null);
     try {
       const res = await fetch('/api/verdict', {
         method: 'POST',
@@ -60,9 +63,11 @@ export default function ProductDetailPage() {
       const data = await res.json();
       if (data.vtoImageUrl) {
         setProduct((p) => (p ? { ...p, vtoImageUrl: data.vtoImageUrl } : p));
+      } else {
+        setVtoError(data.error ?? 'Take your selfie first, then try this on.');
       }
     } catch (err) {
-      console.error('VTO generation failed:', err);
+      setVtoError(`Try-on failed: ${String(err)}`);
     } finally {
       setVtoLoading(false);
     }
@@ -100,6 +105,7 @@ export default function ProductDetailPage() {
                 {vtoLoading ? 'Generating...' : 'Generate VTO'}
               </Button>
             )}
+            {vtoError && <p role="alert" className="mt-3 text-red-600">{vtoError}</p>}
           </div>
         )}
 
@@ -110,6 +116,17 @@ export default function ProductDetailPage() {
           <Button variant="outline" size="lg">
             Save Look
           </Button>
+        </div>
+
+        <div className="mt-8">
+          <AdvisorPanel
+            productId={product.id}
+            suggestions={[
+              'Why did I get this verdict?',
+              'What should I buy instead?',
+              ...(product.category === 'apparel' ? ['Try this on me'] : []),
+            ]}
+          />
         </div>
       </div>
     </div>

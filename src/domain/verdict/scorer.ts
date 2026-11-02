@@ -17,7 +17,8 @@ export function computeVerdict(p: SkinPassport, product: VerdictInput): Verdict 
     // Additive boost (monotonic, preserves relative ordering between garments) so that
     // strongly-flattering harmony scores clear the 'buy' tier threshold in the verdict layer.
     const score = Math.round(Math.max(0, Math.min(100, h.score + 15)));
-    reasons.push(`This color ${h.verdict} your ${p.undertone} undertone (${h.score}/100 harmony).`);
+    const effect = h.verdict === 'flatters' ? 'flatters' : h.verdict === 'clashes' ? 'clashes with' : 'is a neutral match for';
+    reasons.push(`This color ${effect} your ${p.undertone} undertone (${h.score}/100 harmony).`);
     return { score, tier: tierOf(score), harmony: h.score, reasons };
   }
   // beauty: undertone match (0..60) + concern targeting (0..40)
