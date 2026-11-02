@@ -23,6 +23,7 @@ model SkinPassport {
   toneDepth       Int
   concerns        Json
   foundationShade String?
+  personFileId    String?
   createdAt       DateTime @default(now())
 }
 

@@ -1,13 +1,22 @@
 import { YouCamClient } from '@/server/youcam/client';
 import { analyzeSkin, analyzeSkinTone } from '@/server/youcam/adapters';
-import { normalizePassport } from '@/domain/skin/passport';
+import { normalizePassport, type SkinPassport } from '@/domain/skin/passport';
 import { savePassport } from '@/server/repos/passport';
 
-export async function analyzeSkinAndSave(sessionId: string, imageBytes: Buffer): Promise<{ status: string }> {
+export async function analyzeSkinAndSave(
+  sessionId: string,
+  imageBytes: Buffer,
+  opts: { personBytes?: Buffer; contentType?: string } = {},
+): Promise<{ status: string; passport: SkinPassport }> {
   const client = new YouCamClient();
+  const contentType = opts.contentType ?? 'image/jpeg';
 
-  // Step 1: Upload image
-  const fileId = await client.uploadImage(imageBytes, 'image/jpeg');
+  // Step 1: Upload image. Skin analysis needs a tight face crop while try-on needs the
+  // wider shot, so a separate person photo gets its own file.
+  const fileId = await client.uploadImage(imageBytes, contentType);
+  const personFileId = opts.personBytes
+    ? await client.uploadImage(opts.personBytes, contentType, 'person.jpg')
+    : fileId;
 
   // Step 2: Analyze skin and tone in parallel
   const [skinRaw, toneRaw] = await Promise.all([
@@ -19,7 +28,7 @@ export async function analyzeSkinAndSave(sessionId: string, imageBytes: Buffer):
   const passport = normalizePassport({ skinAnalysis: skinRaw, skinTone: toneRaw });
 
   // Step 4: Save to session
-  await savePassport(sessionId, passport);
+  await savePassport(sessionId, passport, personFileId);
 
-  return { status: 'complete' };
+  return { status: 'complete', passport };
 }

@@ -2,7 +2,7 @@ import { prisma } from '@/lib/db';
 import type { SkinPassport } from '@/domain/skin/passport';
 import { CONCERNS } from '@/lib/concerns';
 
-export async function savePassport(sessionId: string, p: SkinPassport): Promise<void> {
+export async function savePassport(sessionId: string, p: SkinPassport, personFileId?: string): Promise<void> {
   await prisma.skinPassport.upsert({
     where: { sessionId },
     create: {
@@ -11,14 +11,22 @@ export async function savePassport(sessionId: string, p: SkinPassport): Promise<
       toneDepth: p.toneDepth,
       concerns: p.concerns as object,
       foundationShade: p.foundationShade,
+      personFileId,
     },
     update: {
       undertone: p.undertone,
       toneDepth: p.toneDepth,
       concerns: p.concerns as object,
       foundationShade: p.foundationShade,
+      personFileId,
     },
   });
+}
+
+/** Kept apart from the passport so the YouCam file id never reaches the browser. */
+export async function getPersonFileId(sessionId: string): Promise<string | null> {
+  const row = await prisma.skinPassport.findUnique({ where: { sessionId }, select: { personFileId: true } });
+  return row?.personFileId ?? null;
 }
 
 export async function getPassport(sessionId: string): Promise<SkinPassport | null> {

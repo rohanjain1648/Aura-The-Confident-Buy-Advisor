@@ -2,13 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getOrCreateSession } from '@/server/repos/session';
 
 export async function getSessionId(request: NextRequest | { cookies: { get: (name: string) => { value: string } | undefined } }): Promise<string> {
-  const cookieVal = request.cookies.get('aura-session-id')?.value;
-  if (cookieVal) return cookieVal;
-
-  // Generate a new session ID and ensure it exists in DB
-  const newId = `sess_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  await getOrCreateSession(newId);
-  return newId;
+  // The middleware only sets the cookie, so the DB row may not exist yet.
+  const id = request.cookies.get('aura-session-id')?.value
+    ?? `sess_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  await getOrCreateSession(id);
+  return id;
 }
 
 export function middleware(request: NextRequest) {

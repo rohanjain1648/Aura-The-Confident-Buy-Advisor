@@ -22,6 +22,19 @@ export async function saveVerdict(
   });
 }
 
+export async function findRecentVto(sessionId: string, productId: string, maxAgeMs: number): Promise<string | undefined> {
+  const row = await prisma.verdict.findFirst({
+    where: {
+      sessionId,
+      productId,
+      vtoImageUrl: { not: null },
+      createdAt: { gte: new Date(Date.now() - maxAgeMs) },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+  return row?.vtoImageUrl ?? undefined;
+}
+
 export async function listVerdicts(sessionId: string): Promise<Verdict[]> {
   const rows = await prisma.verdict.findMany({ where: { sessionId } });
   return rows.map((r) => ({

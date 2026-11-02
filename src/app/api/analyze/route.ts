@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionId } from '@/middleware';
 import { analyzeSkinAndSave } from '@/server/orchestrators/skin';
+import { describeYouCamError } from '@/server/youcam/client';
 
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
+    const person = formData.get('person') as File | null;
 
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
@@ -13,21 +15,27 @@ export async function POST(request: NextRequest) {
 
     const sessionId = await getSessionId(request);
     const imageBytes = Buffer.from(await file.arrayBuffer());
+    const personBytes = person ? Buffer.from(await person.arrayBuffer()) : undefined;
 
     // Stream progress via SSE
+    const encoder = new TextEncoder();
+    const send = (controller: ReadableStreamDefaultController, payload: object) =>
+      controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
+
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          controller.enqueue(`data: ${JSON.stringify({ status: 'uploading' })}\n\n`);
+          send(controller, { status: 'uploading' });
 
-          const result = await analyzeSkinAndSave(sessionId, imageBytes);
+          const result = await analyzeSkinAndSave(sessionId, imageBytes, {
+            personBytes,
+            contentType: file.type || undefined,
+          });
 
-          controller.enqueue(`data: ${JSON.stringify({ ...result, status: 'complete' })}\n\n`);
-          controller.close();
+          send(controller, { ...result, status: 'complete' });
         } catch (err) {
-          controller.enqueue(
-            `data: ${JSON.stringify({ status: 'error', message: String(err) })}\n\n`
-          );
+          send(controller, { status: 'error', message: describeYouCamError(err) });
+        } finally {
           controller.close();
         }
       },
