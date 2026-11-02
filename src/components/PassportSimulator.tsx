@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Sliders, Check, Zap, Layers, RefreshCw } from "lucide-react";
-import Magnetic from "./Magnetic";
+import { Sliders, Palette, ShieldCheck, Check } from "lucide-react";
 
 interface SkinProfile {
   id: string;
@@ -118,7 +117,7 @@ export default function PassportSimulator() {
           </div>
           <h2 className="text-3xl sm:text-5xl font-extrabold text-neutral-950 tracking-tight">
             Select a Diverse Profile. <br />
-            <span className="text-gradient-rose">Watch Verdicts Recalculate Live.</span>
+            <span className="font-serif italic font-normal text-gradient-rose">Watch Verdicts Recalculate Live.</span>
           </h2>
           <p className="text-neutral-600 text-base sm:text-lg">
             Switch between tone archetypes to explore how YouCam tone analysis dynamically outputs color harmony swatches and clinical beauty targets.
@@ -157,7 +156,7 @@ export default function PassportSimulator() {
               <div className="space-y-6">
                 <div className="flex items-center justify-between pb-4 border-b border-neutral-100">
                   <div className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-rose-500" />
+                    <Palette className="w-4 h-4 text-rose-500" />
                     <span className="font-mono text-xs font-bold uppercase text-neutral-950">
                       Skin Passport v2
                     </span>
@@ -168,7 +167,7 @@ export default function PassportSimulator() {
                 </div>
 
                 <div>
-                  <h3 className="text-2xl font-black text-neutral-950">
+                  <h3 className="text-2xl font-black text-neutral-950 font-sans">
                     {selectedProfile.name}
                   </h3>
                   <div className="text-sm font-semibold text-neutral-500 mt-1">

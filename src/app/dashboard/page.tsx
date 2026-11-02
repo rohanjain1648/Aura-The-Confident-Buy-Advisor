@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Sparkles, ShoppingBag, User, Bookmark, History, ArrowRight } from 'lucide-react';
+import { ArrowLeft, ShoppingBag, User, Bookmark, History, ArrowRight } from 'lucide-react';
+import { AuraEmblem } from '@/components/AuraLogo';
 
 export default function DashboardPage() {
   const [cartCount, setCartCount] = useState(0);
@@ -28,13 +29,11 @@ export default function DashboardPage() {
           <span>Home</span>
         </Link>
 
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-rose-500 to-purple-600 p-[1.5px] shadow-sm">
-            <div className="w-full h-full bg-white rounded-full flex items-center justify-center">
-              <Sparkles className="w-3.5 h-3.5 text-rose-500" />
-            </div>
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-neutral-950 flex items-center justify-center text-white shadow-sm">
+            <AuraEmblem className="text-sm text-white" />
           </div>
-          <span className="font-extrabold text-base tracking-tight text-neutral-950">
+          <span className="font-extrabold text-base tracking-tight text-neutral-950 font-sans">
             AURA DASHBOARD
           </span>
         </div>
@@ -55,7 +54,7 @@ export default function DashboardPage() {
             <span>SESSION OVERVIEW</span>
           </div>
           <h1 className="text-3xl sm:text-5xl font-extrabold text-neutral-950 tracking-tight">
-            Your Decision Hub
+            Your Decision <span className="font-serif italic font-normal text-purple-800">Hub</span>
           </h1>
           <p className="text-sm text-neutral-600 font-normal">
             Track your pre-screened items, try-on history, and active biometric parameters.
@@ -71,7 +70,7 @@ export default function DashboardPage() {
                 <ShoppingBag className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-neutral-950">Active Bag</h3>
+                <h3 className="text-lg font-bold text-neutral-950 font-sans">Active Bag</h3>
                 <p className="text-xs text-neutral-500 mt-1">Pre-validated products</p>
               </div>
               <div className="text-4xl font-black font-mono text-neutral-950">
@@ -94,7 +93,7 @@ export default function DashboardPage() {
                 <Bookmark className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-neutral-950">Virtual Try-On Renders</h3>
+                <h3 className="text-lg font-bold text-neutral-950 font-sans">Virtual Try-On Renders</h3>
                 <p className="text-xs text-neutral-500 mt-1">Cloth v4 generation gallery</p>
               </div>
               <div className="text-4xl font-black font-mono text-neutral-400">
@@ -116,7 +115,7 @@ export default function DashboardPage() {
                 <History className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-neutral-950">Skin Passport</h3>
+                <h3 className="text-lg font-bold text-neutral-950 font-sans">Skin Passport</h3>
                 <p className="text-xs text-neutral-500 mt-1">Biometric undertone state</p>
               </div>
               <div className="text-xs font-mono font-bold text-emerald-600 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 w-fit">

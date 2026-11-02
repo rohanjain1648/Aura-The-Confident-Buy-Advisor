@@ -45,7 +45,7 @@ export default function ArchitectureSection() {
           </div>
           <h2 className="text-3xl sm:text-5xl font-extrabold text-neutral-950 tracking-tight">
             Built to Win the Hackathon. <br />
-            <span className="text-gradient-aura">Architected for Production.</span>
+            <span className="font-serif italic font-normal text-gradient-aura">Architected for Production.</span>
           </h2>
           <p className="text-neutral-600 text-base sm:text-lg">
             Single Next.js deployable with zero client-side key exposure, fast Prisma local database, and pure functional color science.

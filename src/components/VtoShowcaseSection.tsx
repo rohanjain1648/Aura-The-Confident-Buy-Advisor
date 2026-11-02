@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Eye, Sparkles, SlidersHorizontal, CheckCircle2 } from "lucide-react";
+import { Eye, SlidersHorizontal, CheckCircle2 } from "lucide-react";
 
 export default function VtoShowcaseSection() {
   const [sliderPos, setSliderPos] = useState(50);
@@ -45,7 +45,7 @@ export default function VtoShowcaseSection() {
           </div>
           <h2 className="text-3xl sm:text-5xl font-extrabold text-neutral-950 tracking-tight">
             See the Fit Before <br />
-            <span className="text-gradient-cyan">You Touch the Checkout</span>
+            <span className="font-serif italic font-normal text-gradient-cyan">You Touch the Checkout.</span>
           </h2>
           <p className="text-neutral-600 text-base sm:text-lg">
             Drag the slider to compare original user selfie input against YouCam’s photorealistic cloth drape and lighting adaptation engine.
@@ -97,7 +97,7 @@ export default function VtoShowcaseSection() {
                 <div className="relative text-center space-y-4 p-6">
                   <div className="w-28 h-36 rounded-2xl border-2 border-cyan-400/60 mx-auto flex items-center justify-center bg-neutral-900/90 shadow-2xl">
                     <div className="space-y-1">
-                      <Sparkles className="w-6 h-6 text-cyan-400 mx-auto animate-pulse" />
+                      <Eye className="w-6 h-6 text-cyan-400 mx-auto" />
                       <div className="text-xs font-mono font-bold text-white">
                         YOUCAM VTO
                       </div>

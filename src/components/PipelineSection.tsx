@@ -54,7 +54,7 @@ export default function PipelineSection() {
           </div>
           <h2 className="text-3xl sm:text-5xl font-extrabold text-neutral-950 tracking-tight">
             Three YouCam APIs. <br />
-            <span className="text-gradient-aura">One Shared Context. Zero Silos.</span>
+            <span className="font-serif italic font-normal text-gradient-aura">One Shared Context. Zero Silos.</span>
           </h2>
           <p className="text-neutral-600 text-base sm:text-lg leading-relaxed">
             Hackathons penalize submissions that bolt features side-by-side. Aura unifies skin tone, concern metrics, and apparel try-on behind a single deterministic decision engine.

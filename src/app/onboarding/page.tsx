@@ -1,6 +1,7 @@
 import OnboardingCapture from '@/components/OnboardingCapture';
 import Link from 'next/link';
-import { ArrowLeft, Sparkles } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
+import { AuraEmblem } from '@/components/AuraLogo';
 
 export default function OnboardingPage() {
   return (
@@ -15,13 +16,11 @@ export default function OnboardingPage() {
           <span>Back to Home</span>
         </Link>
 
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-rose-500 to-purple-600 p-[1.5px] shadow-sm">
-            <div className="w-full h-full bg-white rounded-full flex items-center justify-center">
-              <Sparkles className="w-3.5 h-3.5 text-rose-500" />
-            </div>
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-neutral-950 flex items-center justify-center text-white shadow-sm">
+            <AuraEmblem className="text-sm text-white" />
           </div>
-          <span className="font-extrabold text-base tracking-tight text-neutral-950">AURA</span>
+          <span className="font-extrabold text-base tracking-tight text-neutral-950 font-sans">AURA</span>
         </div>
 
         <Link

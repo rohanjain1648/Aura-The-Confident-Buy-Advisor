@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, ShoppingBag, Sparkles, Check, ArrowRight } from 'lucide-react';
+import { ArrowLeft, ShoppingBag, ArrowRight } from 'lucide-react';
+import { AuraEmblem } from '@/components/AuraLogo';
 
 export default function CartPage() {
   const [items, setItems] = useState<{ id: string; productId: string }[]>([]);
@@ -30,13 +31,11 @@ export default function CartPage() {
           <span>Back to Shop</span>
         </Link>
 
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-rose-500 to-purple-600 p-[1.5px] shadow-sm">
-            <div className="w-full h-full bg-white rounded-full flex items-center justify-center">
-              <Sparkles className="w-3.5 h-3.5 text-rose-500" />
-            </div>
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-neutral-950 flex items-center justify-center text-white shadow-sm">
+            <AuraEmblem className="text-sm text-white" />
           </div>
-          <span className="font-extrabold text-base tracking-tight text-neutral-950">
+          <span className="font-extrabold text-base tracking-tight text-neutral-950 font-sans">
             AURA BAG
           </span>
         </div>
@@ -53,7 +52,7 @@ export default function CartPage() {
       <main className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-8 py-12 space-y-8">
         <div className="space-y-2">
           <h1 className="text-3xl sm:text-4xl font-extrabold text-neutral-950 tracking-tight">
-            Shopping Bag
+            Shopping <span className="font-serif italic font-normal text-purple-800">Bag</span>
           </h1>
           <p className="text-sm text-neutral-600">
             Items pre-validated with your Skin Passport confidence score.

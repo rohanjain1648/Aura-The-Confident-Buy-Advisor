@@ -4,10 +4,11 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeft, Sparkles, ShoppingBag, Eye, RefreshCw, Check, AlertCircle } from 'lucide-react';
+import { ArrowLeft, ShoppingBag, Eye, RefreshCw, Check, AlertCircle, Camera } from 'lucide-react';
 import VerdictBadge from '@/components/VerdictBadge';
 import AdvisorPanel from '@/components/AdvisorPanel';
 import type { Verdict } from '@/domain/verdict/scorer';
+import { AuraEmblem } from '@/components/AuraLogo';
 
 interface ProductDetail {
   id: string;
@@ -130,13 +131,11 @@ export default function ProductDetailPage() {
           <span>Back to Shop</span>
         </Link>
 
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-rose-500 to-purple-600 p-[1.5px] shadow-sm">
-            <div className="w-full h-full bg-white rounded-full flex items-center justify-center">
-              <Sparkles className="w-3.5 h-3.5 text-rose-500" />
-            </div>
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-neutral-950 flex items-center justify-center text-white shadow-sm">
+            <AuraEmblem className="text-sm text-white" />
           </div>
-          <span className="font-extrabold text-base tracking-tight text-neutral-950">
+          <span className="font-extrabold text-base tracking-tight text-neutral-950 font-sans">
             AURA PRODUCT VERDICT
           </span>
         </div>
@@ -227,7 +226,7 @@ export default function ProductDetailPage() {
                         </>
                       ) : (
                         <>
-                          <Sparkles className="w-3.5 h-3.5 text-rose-400" />
+                          <Camera className="w-3.5 h-3.5 text-rose-300" />
                           <span>Generate Virtual Try-On</span>
                         </>
                       )}
@@ -251,7 +250,7 @@ export default function ProductDetailPage() {
                   )}
                 </div>
 
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-neutral-950">
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-neutral-950 font-sans">
                   {product.name}
                 </h1>
 

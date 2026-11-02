@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
-import { Sparkles, Send, Bot, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Send, Bot, CheckCircle2, AlertCircle, Compass, RefreshCw } from 'lucide-react';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -78,12 +78,12 @@ export default function AdvisorPanel({
       {/* Header */}
       <div className="flex items-center justify-between pb-4 border-b border-neutral-100">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-rose-500 to-purple-600 flex items-center justify-center text-white shadow-md shadow-purple-600/20">
+          <div className="w-10 h-10 rounded-2xl bg-neutral-950 flex items-center justify-center text-white shadow-md shadow-neutral-950/20">
             <Bot className="w-5 h-5 text-white" />
           </div>
           <div>
             <h2 className="text-lg font-extrabold text-neutral-950 flex items-center gap-2">
-              <span>Ask Aura</span>
+              <span>Ask <span className="font-serif italic font-normal text-purple-800">Aura</span></span>
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             </h2>
             <p className="text-xs text-neutral-500 font-normal">
@@ -109,7 +109,7 @@ export default function AdvisorPanel({
                 onClick={() => send(s)}
                 className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-neutral-50 hover:bg-purple-50 text-neutral-700 hover:text-purple-700 border border-neutral-200 hover:border-purple-200 transition-all flex items-center gap-1.5 shadow-xs"
               >
-                <Sparkles className="w-3.5 h-3.5 text-purple-500" />
+                <Compass className="w-3.5 h-3.5 text-purple-600" />
                 <span>{s}</span>
               </button>
             ))}
@@ -157,7 +157,7 @@ export default function AdvisorPanel({
 
       {loading && (
         <div className="p-3 rounded-xl bg-purple-50/70 border border-purple-200/80 text-xs text-purple-700 font-mono flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-purple-600 animate-spin" />
+          <RefreshCw className="w-4 h-4 text-purple-600 animate-spin" />
           <span>Consulting Skin Passport and running YouCam tools...</span>
         </div>
       )}

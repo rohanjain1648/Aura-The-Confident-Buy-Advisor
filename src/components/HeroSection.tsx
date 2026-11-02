@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Sparkles, ArrowRight, ShieldCheck, Zap, Layers, Sliders, RefreshCw, CheckCircle2 } from "lucide-react";
+import { ArrowRight, ShieldCheck, Zap, Layers, Sliders, RefreshCw, Camera } from "lucide-react";
 import Magnetic from "./Magnetic";
 
 export default function HeroSection() {
@@ -38,10 +38,10 @@ export default function HeroSection() {
             <span>PERFECT CORP. YOUCAM API HACKATHON 2026</span>
           </div>
 
-          {/* Main Headline */}
+          {/* Main Headline with Editorial Serif Italic */}
           <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-neutral-950 leading-[1.08]">
             One Selfie. <br />
-            <span className="text-gradient-aura">Two Verdicts.</span> <br />
+            <span className="font-serif italic font-normal text-gradient-aura">Two Verdicts.</span> <br />
             Zero Guesswork.
           </h1>
 
@@ -61,7 +61,7 @@ export default function HeroSection() {
                 href="/onboarding"
                 className="relative inline-flex items-center gap-3 px-8 py-4 rounded-full bg-gradient-to-r from-rose-500 via-purple-600 to-indigo-600 text-white font-semibold text-base shadow-xl shadow-purple-600/25 hover:shadow-2xl hover:shadow-purple-600/40 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 group"
               >
-                <Sparkles className="w-5 h-5 text-rose-200 animate-pulse" />
+                <Camera className="w-5 h-5 text-rose-200" />
                 <span>Create Your Skin Passport</span>
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>

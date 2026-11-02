@@ -5,7 +5,8 @@ import Link from 'next/link';
 import ProductCard from '@/components/ProductCard';
 import AdvisorPanel from '@/components/AdvisorPanel';
 import type { Verdict } from '@/domain/verdict/scorer';
-import { ArrowLeft, Sparkles, ShoppingBag, SlidersHorizontal, RefreshCw } from 'lucide-react';
+import { ArrowLeft, ShoppingBag, RefreshCw, Compass } from 'lucide-react';
+import { AuraEmblem } from '@/components/AuraLogo';
 
 interface ProductWithVerdict {
   id: string;
@@ -51,13 +52,11 @@ export default function ShopPage() {
           <span>Home</span>
         </Link>
 
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-rose-500 to-purple-600 p-[1.5px] shadow-sm">
-            <div className="w-full h-full bg-white rounded-full flex items-center justify-center">
-              <Sparkles className="w-3.5 h-3.5 text-rose-500" />
-            </div>
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-neutral-950 flex items-center justify-center text-white shadow-sm">
+            <AuraEmblem className="text-sm text-white" />
           </div>
-          <span className="font-extrabold text-base tracking-tight text-neutral-950">
+          <span className="font-extrabold text-base tracking-tight text-neutral-950 font-sans">
             AURA STOREFRONT
           </span>
         </div>
@@ -85,11 +84,11 @@ export default function ShopPage() {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-neutral-200/80">
           <div className="space-y-3">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-50 border border-purple-200 text-xs font-mono font-bold text-purple-700">
-              <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+              <Compass className="w-3.5 h-3.5 text-purple-600" />
               <span>CONFIDENCE DECISION ENGINE</span>
             </div>
             <h1 className="text-3xl sm:text-5xl font-extrabold text-neutral-950 tracking-tight">
-              Personalized Storefront
+              Personalized <span className="font-serif italic font-normal text-purple-800">Storefront</span>
             </h1>
             <p className="text-neutral-600 text-sm sm:text-base max-w-2xl font-normal">
               Every garment and cosmetic item is pre-evaluated against your active Skin Passport. Ranked by deterministic harmony score.

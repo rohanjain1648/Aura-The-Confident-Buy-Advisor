@@ -1,14 +1,14 @@
 import type { Tier } from '@/lib/concerns';
-import { Sparkles, Star, Ban } from 'lucide-react';
+import { CheckCircle2, Star, Ban } from 'lucide-react';
 
 const tierConfig: Record<
   Tier,
-  { label: string; pill: string; icon: typeof Sparkles }
+  { label: string; pill: string; icon: typeof CheckCircle2 }
 > = {
   buy: {
     label: 'Perfect Match',
     pill: 'bg-emerald-50 text-emerald-700 border-emerald-200/90 shadow-xs',
-    icon: Sparkles,
+    icon: CheckCircle2,
   },
   maybe: {
     label: 'Complements',

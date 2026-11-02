@@ -420,7 +420,7 @@ pnpm playwright test
 pnpm tsc --noEmit
 ```
 
-Current results: **88 Vitest tests** across 19 files and **13 Playwright tests** pass.
+Current results: **88 Vitest tests** across 19 files pass. The 13 Playwright tests were written before the latest UI redesign and need updating for its new labels.
 
 - **Unit** — the color-harmony engine, the Skin Passport normalizer, and the verdict scorer
   are pure functions tested with plain input/output assertions.

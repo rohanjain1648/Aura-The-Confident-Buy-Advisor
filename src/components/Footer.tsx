@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { Sparkles, ArrowRight } from "lucide-react";
+import { ArrowRight, CheckCircle2 } from "lucide-react";
 import Magnetic from "./Magnetic";
+import { AuraEmblem } from "./AuraLogo";
 
 export default function Footer() {
   return (
@@ -12,12 +13,12 @@ export default function Footer() {
         <div className="rounded-3xl p-8 sm:p-12 border border-rose-200 bg-gradient-to-r from-purple-50 via-rose-50 to-amber-50 text-center space-y-6 shadow-lg shadow-purple-900/5 relative overflow-hidden">
           <div className="max-w-2xl mx-auto space-y-4">
             <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white border border-rose-200 text-xs font-mono font-semibold text-rose-700 shadow-xs">
-              <Sparkles className="w-3.5 h-3.5 text-rose-500" />
+              <CheckCircle2 className="w-3.5 h-3.5 text-rose-500" />
               <span>THE CONFIDENT-BUY GUARANTEE</span>
             </div>
             <h2 className="text-3xl sm:text-5xl font-extrabold text-neutral-950 tracking-tight">
               Ready to Eliminate <br />
-              <span className="text-gradient-aura">E-Commerce Return Anxiety?</span>
+              <span className="font-serif italic font-normal text-gradient-aura">E-Commerce Return Anxiety?</span>
             </h2>
             <p className="text-neutral-600 text-base sm:text-lg">
               One selfie generates your unified Skin Passport — scoring apparel color harmony and beauty product fit in seconds.
@@ -51,12 +52,10 @@ export default function Footer() {
           {/* Brand Col */}
           <div className="space-y-4 md:col-span-1">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-rose-500 to-purple-600 p-[1.5px] shadow-sm">
-                <div className="w-full h-full bg-white rounded-full flex items-center justify-center">
-                  <Sparkles className="w-4 h-4 text-rose-500" />
-                </div>
+              <div className="w-8 h-8 rounded-xl bg-neutral-950 flex items-center justify-center text-white shadow-sm">
+                <AuraEmblem className="text-base text-white" />
               </div>
-              <span className="text-lg font-black tracking-tight text-neutral-950">
+              <span className="text-lg font-black tracking-tight text-neutral-950 font-sans">
                 AURA
               </span>
             </div>

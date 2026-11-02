@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { ShoppingBag, Sparkles, Check, ArrowUpRight } from "lucide-react";
-import Magnetic from "./Magnetic";
+import { ShoppingBag, Check, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
+import { AuraEmblem } from "./AuraLogo";
 
 interface Product {
   id: string;
@@ -92,7 +92,7 @@ export default function ProductGridSection() {
             </div>
             <h2 className="text-3xl sm:text-5xl font-extrabold text-neutral-950 tracking-tight">
               Personalized Badges on <br />
-              <span className="text-gradient-gold">Every Product Card</span>
+              <span className="font-serif italic font-normal text-gradient-gold">Every Product Card.</span>
             </h2>
             <p className="text-neutral-600 text-base">
               Once a Skin Passport exists, every product card computes an instant match badge without making repeated external API calls.
@@ -158,8 +158,8 @@ export default function ProductGridSection() {
                     </div>
 
                     <div className="space-y-1">
-                      <div className="w-12 h-12 rounded-xl bg-white/80 backdrop-blur-md border border-white flex items-center justify-center shadow-xs">
-                        <Sparkles className="w-6 h-6 text-purple-600" />
+                      <div className="w-10 h-10 rounded-xl bg-white/90 backdrop-blur-md border border-white flex items-center justify-center shadow-xs">
+                        <AuraEmblem className="text-purple-700 text-lg" />
                       </div>
                     </div>
                   </div>

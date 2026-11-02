@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import VerdictBadge from './VerdictBadge';
 import type { Verdict } from '@/domain/verdict/scorer';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowRight, CheckCircle2 } from 'lucide-react';
 
 export default function ProductCard({
   id,
@@ -37,15 +37,16 @@ export default function ProductCard({
               </span>
             </div>
             {verdict.tier === 'buy' && (
-              <div className="absolute top-3 right-3 w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-md">
-                <Sparkles className="w-3.5 h-3.5" />
+              <div className="absolute top-3 right-3 px-2 py-1 rounded-full bg-emerald-500 text-white text-[10px] font-mono font-bold flex items-center gap-1 shadow-md">
+                <CheckCircle2 className="w-3 h-3" />
+                <span>TOP MATCH</span>
               </div>
             )}
           </div>
 
           {/* Details */}
           <div className="space-y-2">
-            <h3 className="font-extrabold text-lg text-neutral-950 group-hover:text-purple-700 transition-colors line-clamp-1">
+            <h3 className="font-extrabold text-lg text-neutral-950 group-hover:text-purple-700 transition-colors line-clamp-1 font-sans">
               {name}
             </h3>
 

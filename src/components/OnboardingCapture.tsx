@@ -1,9 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, Upload, Sparkles, AlertCircle, RefreshCw, ArrowRight, ShieldCheck, CheckCircle2, User } from 'lucide-react';
-import Link from 'next/link';
+import { motion } from 'framer-motion';
+import { Camera, Upload, AlertCircle, RefreshCw, ArrowRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
 
 // YouCam skin analysis needs the face to span over 60% of the image width and a
 // short side of at least 480px. Try-on needs the wider shot, so a capture sends both.
@@ -91,6 +90,10 @@ export default function OnboardingCapture() {
 
     try {
       const response = await fetch('/api/analyze', { method: 'POST', body: formData });
+      if (!response.ok) {
+        const failure = await response.json().catch(() => null);
+        throw new Error(failure?.error ?? `Analysis failed (${response.status}). Please try again.`);
+      }
       if (!response.body) throw new Error('No response body');
 
       const reader = response.body.getReader();
@@ -193,7 +196,7 @@ export default function OnboardingCapture() {
         <div className="p-7 sm:p-8 border-b border-neutral-100 bg-gradient-to-b from-neutral-50/60 to-white">
           <div className="flex items-center justify-between mb-3">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-50 border border-rose-200 text-xs font-mono font-bold text-rose-700">
-              <Sparkles className="w-3.5 h-3.5 text-rose-500 animate-pulse" />
+              <Camera className="w-3.5 h-3.5 text-rose-600" />
               <span>AURA SKIN PASSPORT</span>
             </div>
             <span className="text-xs font-mono font-semibold text-neutral-400">
@@ -201,7 +204,7 @@ export default function OnboardingCapture() {
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-neutral-950 tracking-tight">
-            Capture Your Aura
+            Capture Your <span className="font-serif italic font-normal text-purple-800">Aura</span>
           </h1>
           <p className="mt-1.5 text-sm text-neutral-600 font-normal leading-relaxed">
             One clear selfie generates your biometric undertone profile and clinical skin concerns for instant product verdicts.
@@ -354,7 +357,7 @@ export default function OnboardingCapture() {
 
               <div className="space-y-2">
                 <h3 className="text-xl font-extrabold text-neutral-950">
-                  Analyzing Your Aura...
+                  Analyzing Your <span className="font-serif italic font-normal text-purple-700">Aura</span>...
                 </h3>
                 <p className="text-xs font-mono text-neutral-500">
                   Communicating with YouCam S2S Neural Engine

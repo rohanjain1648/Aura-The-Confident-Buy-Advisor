@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Sparkles, ArrowRight, Cpu, Eye, ShoppingBag } from "lucide-react";
+import { ArrowRight, Cpu, Eye, ShoppingBag, Compass } from "lucide-react";
 import Magnetic from "./Magnetic";
+import { AuraLogoBadge } from "./AuraLogo";
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -26,12 +27,8 @@ export default function Navbar() {
         }`}
       >
         {/* Brand Logo */}
-        <Link href="/" className="flex items-center gap-3 group">
-          <div className="relative flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-rose-500 via-purple-600 to-indigo-600 p-[1.5px] shadow-md shadow-purple-600/20 group-hover:scale-105 transition-transform duration-300">
-            <div className="w-full h-full bg-white rounded-full flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-rose-500 animate-pulse" />
-            </div>
-          </div>
+        <Link href="/" className="flex items-center gap-3.5 group">
+          <AuraLogoBadge />
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
               <span className="text-xl font-extrabold tracking-tight text-neutral-950 font-sans">
@@ -42,7 +39,7 @@ export default function Navbar() {
               </span>
             </div>
             <span className="text-[11px] text-neutral-500 hidden sm:inline font-medium">
-              The Confident-Buy Advisor
+              The Confident-Buy <span className="font-serif italic text-purple-800">Advisor</span>
             </span>
           </div>
         </Link>
@@ -54,7 +51,7 @@ export default function Navbar() {
             <span>3-API Pipeline</span>
           </a>
           <a href="#simulator" className="hover:text-neutral-950 transition-colors flex items-center gap-1.5 hover:scale-105">
-            <Sparkles className="w-4 h-4 text-rose-600" />
+            <Compass className="w-4 h-4 text-rose-600" />
             <span>Skin Passport</span>
           </a>
           <a href="#vto" className="hover:text-neutral-950 transition-colors flex items-center gap-1.5 hover:scale-105">
