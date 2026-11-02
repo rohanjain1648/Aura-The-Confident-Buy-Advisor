@@ -2,130 +2,156 @@
 
 **One selfie. Two verdicts. Zero guesswork.**
 
-Aura is a personalized e-commerce storefront built for the Perfect Corp. YouCam API
-Hackathon (Skin AI + Apparel VTO combined track). It answers the question every online
-shopper actually asks — *"will this suit **me**?"* — for both apparel and beauty
-products, from a single skin analysis.
+Aura is a personalized storefront built for Perfect Corp.'s YouCam API Skin AI & eCommerce
+VTO Hackathon. It answers the question every online shopper actually asks — *"will this
+suit **me**?"* — for both apparel and beauty products, from a single selfie.
 
-> Built with Next.js 15/16 (App Router), TypeScript, Prisma/SQLite, and three YouCam
-> APIs (`skin-analysis`, `skin-tone-analysis`, `cloth`), unified behind one deterministic
-> decision engine.
+> Built with Next.js 16 (App Router), TypeScript, and Prisma/SQLite. It uses three YouCam
+> APIs (`skin-analysis`, `skin-tone-analysis`, `cloth-v4`), one deterministic decision
+> engine, and a tool-calling advisor agent on Groq and OpenAI.
 
 ---
 
 ## Table of contents
 
-1. [The thesis — why this isn't two features bolted together](#the-thesis)
-2. [How it works (user journey)](#how-it-works)
-3. [Architecture](#architecture)
-4. [Tech stack](#tech-stack)
-5. [Storefront routes](#storefront-routes)
-6. [Data model](#data-model)
-7. [Internal API surface](#internal-api-surface)
-8. [YouCam integration](#youcam-integration)
-9. [Getting started](#getting-started)
-10. [Environment variables](#environment-variables)
-11. [Testing](#testing)
-12. [Project structure](#project-structure)
-13. [Security & privacy](#security--privacy)
-14. [Build status](#build-status)
-15. [Build Status (P0 Submission)](#build-status-p0-submission)
-16. [Live Mode (Real YouCam API)](#live-mode-real-youcam-api)
-17. [Roadmap](#roadmap)
+1. [The thesis](#the-thesis)
+2. [How it works](#how-it-works)
+3. [Built during the submission period](#built-during-the-submission-period)
+4. [Architecture](#architecture)
+5. [Tech stack](#tech-stack)
+6. [Storefront routes](#storefront-routes)
+7. [Data model](#data-model)
+8. [Internal API surface](#internal-api-surface)
+9. [YouCam integration](#youcam-integration)
+10. [Advisor Agent](#advisor-agent)
+11. [Getting started](#getting-started)
+12. [Environment variables](#environment-variables)
+13. [Deployment](#deployment)
+14. [Testing](#testing)
+15. [Project structure](#project-structure)
+16. [Security & privacy](#security--privacy)
+17. [Known limitations](#known-limitations)
+18. [Roadmap](#roadmap)
+19. [License](#license)
 
 ---
 
 ## The thesis
 
-Hackathon rubrics penalize submissions that bolt a skin feature and a try-on feature
-side by side with no shared logic. Aura is built around a single **unification thesis**:
-one selfie produces a **Skin Passport**, and that Passport — not two independent
-API calls — is what drives *every* downstream buying decision.
+Skin advice and virtual try-on usually live in separate tools, so shoppers still have to
+work out what the results mean for a purchase. Aura is built around a single idea: one
+selfie produces a **Skin Passport**, and that Passport drives *every* downstream buying
+decision.
 
 | Signal | YouCam source | Feeds |
 |---|---|---|
-| Undertone (warm / cool / neutral) + tone depth | `skin-tone-analysis` | Apparel color-harmony **and** foundation shade match |
-| Concern scores (redness, oiliness, spots, texture, dark circles, pores, wrinkles, acne) | `skin-analysis` | Skincare/beauty relevance |
+| Undertone (warm / cool / neutral) + tone depth, derived from the returned skin colour | `skin-tone-analysis` | Apparel color harmony **and** foundation shade match |
+| Concern scores (redness, oiliness, spots, texture, dark circles, pores, wrinkles, acne) | `skin-analysis` | Beauty product relevance |
 
 That one Passport powers two verdicts through one scoring engine:
 
-- **Apparel** — a deterministic, pure color-harmony engine (CIELAB color space, ΔE
-  distance, seasonal-color theory) scores a garment's color against the user's
-  undertone, then YouCam's `cloth` API renders it on the user's own photo.
-- **Beauty** — shade/undertone match against the catalog, weighted by whether the
-  product targets the user's #1 concern.
+- **Apparel** — a deterministic color-harmony engine scores a garment's color against the
+  shopper's undertone using CIELAB distance. YouCam's `cloth-v4` API then renders the
+  garment on the shopper's own photo.
+- **Beauty** — a shade and undertone match against the catalog, weighted by whether the
+  product targets the shopper's top concern.
 
-Both verdicts collapse into one number and one card:
-`Confidence = f(color-harmony | shade-match, VTO result, concern targeting)`.
-Three YouCam APIs, one shared context, one decision surface — that shared context
-*is* the combined experience.
+Both produce a 0–100 score and a tier: `buy` (70+), `maybe` (45–69), or `skip` (below 45).
 
 ---
 
 ## How it works
 
-1. **Capture** (`/onboarding`) — selfie via camera or upload. A client-side pre-flight
-   check (face present, resolution, brightness) rejects bad input *before* any YouCam
-   unit is spent.
-2. **Analyze** — the selfie is uploaded once (YouCam File API), then fanned out to
-   `skin-analysis` and `skin-tone-analysis` in parallel. Progress streams to the client
-   over SSE ("Uploading… Reading undertone… Scoring concerns…"). Results are normalized
-   into a `SkinPassport` and persisted against the anonymous session.
-3. **Browse** (`/shop`) — every product card shows a personalized match badge computed
-   from the stored Passport — cheap, no VTO spend yet.
-4. **Decide** (`/product/[id]`) — the Aura widget requests a full verdict: for apparel,
-   the harmony engine plus a `cloth` VTO render; for beauty, a shade/concern match.
-5. **Result** — a Confidence Score, the VTO image (apparel) or shade rationale (beauty),
-   and a shareable **Look Card**. The verdict is persisted to `/me`'s history.
+1. **Capture** (`/onboarding`) — take a selfie with the on-screen face guide, or upload a
+   photo. Photos under 480 px on the short side are rejected in the browser, before any
+   YouCam unit is spent.
+2. **Analyze** — the face crop is uploaded and sent to `skin-analysis` and
+   `skin-tone-analysis` in parallel, while the wider frame is stored for try-on. Results are
+   normalized into a `SkinPassport` and saved against the anonymous session. Photo problems,
+   such as a face that's too small or a dark image, come back as guidance the shopper can
+   act on.
+3. **Browse** (`/shop`) — every product card shows a personalized verdict from the stored
+   Passport, best matches first. This spends no API units.
+4. **Decide** (`/shop/[id]`) — see the verdict and generate a real try-on for apparel.
+5. **Ask** — the **Ask Aura** panel on the shop and product pages explains verdicts, suggests
+   what to buy, and can run a try-on on request.
+
+---
+
+## Built during the submission period
+
+Aura began as a prototype in August 2026 that ran only on prerecorded data. Its real API
+integration had never run successfully. The tag
+[`pre-hackathon-baseline`](https://github.com/rohanjain1648/Aura-The-Confident-Buy-Advisor/tree/pre-hackathon-baseline)
+marks that state, and [this comparison](https://github.com/rohanjain1648/Aura-The-Confident-Buy-Advisor/compare/pre-hackathon-baseline...main)
+shows everything since.
+
+Added after the submission period began on Sep 29, 2026:
+
+- **Working YouCam integration** — rebuilt on the v2.0 API with API-key auth, and run against
+  the live API with real photos: skin analysis, skin tone, and clothes try-on.
+- **Skin data interpretation** — health scores become ranked concerns, and undertone and
+  depth are derived from the returned skin colour.
+- **Advisor Agent** — a tool-calling shopping advisor on Groq, with OpenAI as fallback.
+- **End-to-end flow fixes** — session handling, passport saving, stored photos for try-on,
+  and clear errors, none of which worked with real users before.
+- **Capture experience** — a face guide, a crop that meets YouCam's limits, and photo upload.
+- **Real catalog** — product photos, with garment colours matched to them.
+- **Deployment** — a Render Blueprint.
 
 ---
 
 ## Architecture
 
-Single Next.js deployable. **API keys never leave the server** — all YouCam and model
-calls happen inside Route Handlers; Client Components only ever see already-scored,
-already-rendered results.
+Single Next.js deployable. **API keys never leave the server** — all YouCam and model calls
+happen inside Route Handlers, and the browser only sees scored results.
 
 ```mermaid
 flowchart TD
-    subgraph Client["Browser · React / Tailwind / shadcn"]
-        Home["/ landing/"] --> Onb["/onboarding · capture/"]
-        Onb --> Shop["/shop · personalized/"]
-        Shop --> PDP["/product/[id] · Aura widget/"]
-        PDP --> Me["/me · Skin Passport/"]
+    subgraph Client["Browser"]
+        Onb["/onboarding"]
+        Shop["/shop"]
+        PDP["/shop/[id]"]
+        Panel["Ask Aura panel"]
     end
 
-    subgraph Server["Next.js Route Handlers · server-only"]
-        Sess["/api/session/"]
+    subgraph Server["Next.js Route Handlers"]
         SkinO["Skin Orchestrator"]
-        Harmony["Color-Harmony Engine · pure"]
-        VtoO["VTO Orchestrator"]
-        Agent["Advisor Agent · LLM + tools"]
-        LlmC["LLM Client<br/>provider routing · fallback"]
-        YC["YouCam Service<br/>auth · upload · run · poll"]
-        DB[("(SQLite via Prisma)")]
+        Verdict["Verdict Engine"]
+        VtoO["Try-on Orchestrator"]
+        Agent["Advisor Agent"]
+        LlmC["LLM Client"]
+        YC["YouCam Client"]
+        DB[("SQLite via Prisma")]
     end
 
     subgraph External
-        YCAPI["YouCam API<br/>skin-analysis · skin-tone · cloth"]
-        Groq["Groq API (primary)"]
-        OpenAI["OpenAI API (fallback)"]
+        YCAPI["YouCam API"]
+        Groq["Groq (primary)"]
+        OpenAI["OpenAI (fallback)"]
     end
 
-    Onb -.SSE progress.- Sess
-    Sess --> SkinO --> YC --> YCAPI
-    SkinO --> DB
-    PDP --> Agent
-    Agent -->|tools| Harmony & VtoO & DB
-    Agent --> LlmC
-    LlmC --> Groq & OpenAI
+    Onb -->|"/api/analyze"| SkinO
+    Shop -->|"/api/shop"| Verdict
+    PDP -->|"/api/verdict"| VtoO
+    Panel -->|"/api/advisor"| Agent
+    SkinO --> YC
     VtoO --> YC
+    YC --> YCAPI
+    SkinO --> DB
+    Verdict --> DB
+    VtoO --> Verdict
+    Agent -->|tools| Verdict
+    Agent -->|tools| VtoO
+    Agent --> LlmC
+    LlmC --> Groq
+    LlmC --> OpenAI
 ```
 
-- **Server Components** render the catalog and passport-aware badges (`/shop`, `/me`).
-- **Client Components** handle capture, SSE progress, the VTO viewer, and gauges.
-- **Route Handlers** are the only place YouCam/Groq/OpenAI credentials exist.
-- **Middleware** guarantees every request carries a `sessionId` cookie.
+- **Pages** are client components that call the Route Handlers. The landing page presents
+  the concept and links into the live flow.
+- **Route Handlers** are the only place YouCam, Groq, and OpenAI credentials are used.
+- **Middleware** gives every visitor a session cookie.
 
 ---
 
@@ -133,34 +159,34 @@ flowchart TD
 
 | Layer | Choice |
 |---|---|
-| Framework | Next.js (App Router), TypeScript strict |
+| Framework | Next.js 16 (App Router), TypeScript strict |
 | UI | Tailwind CSS v4, shadcn/ui |
-| Data | Prisma ORM + SQLite (`@prisma/adapter-better-sqlite3` driver adapter, Prisma 7) |
-| External AI | YouCam S2S REST API (skin, tone, apparel VTO); Groq + OpenAI via a provider-agnostic LLM client (P1 Advisor Agent) |
+| Data | Prisma 7 + SQLite (`@prisma/adapter-better-sqlite3`) |
+| YouCam APIs | `skin-analysis`, `skin-tone-analysis`, `cloth-v4` (v2.0 REST API) |
+| LLM | Groq (`openai/gpt-oss-120b`), with OpenAI (`gpt-4o-mini`) as fallback, called with `fetch` |
 | Unit tests | Vitest + Testing Library |
 | E2E tests | Playwright |
-| Package manager | pnpm (workspace-native build allowlisting for `better-sqlite3`) |
+| Package manager | pnpm 11 |
 
 ---
 
 ## Storefront routes
 
-| Route | Rendering | Purpose |
-|---|---|---|
-| `/` | Server | Landing, value prop, "Analyze my skin" CTA, featured products |
-| `/onboarding` | Client | Selfie capture → Skin Passport (SSE progress) → persist |
-| `/shop` | Server | Full catalog (apparel + beauty), passport-aware match badges |
-| `/product/[id]` | Server + Client widget | PDP with Aura widget: Confidence Score, VTO, rationale, add-to-cart |
-| `/me` | Server | Skin Passport dashboard: undertone, concerns, palette, saved looks, verdict history |
-| `/cart` | Server | Illustrative cart, closes the confident-buy loop |
-| `/looks/[id]` | Server | Shareable Look Card permalink |
+| Route | Purpose |
+|---|---|
+| `/` | Landing page and "Analyze my skin" call to action |
+| `/onboarding` | Selfie capture or upload, then the Skin Passport result |
+| `/shop` | Full catalog with personalized verdicts, plus the Ask Aura panel |
+| `/shop/[id]` | Product page with verdict, try-on, add to cart, and the Ask Aura panel |
+| `/cart` | Illustrative cart |
+| `/dashboard` | Session stats |
 
 ---
 
 ## Data model
 
-Prisma schema (SQLite). All identifiers are session-scoped; there is no user account
-system — an anonymous cookie session is the unit of personalization.
+Prisma schema (SQLite). There is no user account system: an anonymous cookie session is the
+unit of personalization.
 
 ```prisma
 model Session {
@@ -178,8 +204,9 @@ model SkinPassport {
   session         Session  @relation(fields: [sessionId], references: [id])
   undertone       String   // 'warm' | 'cool' | 'neutral'
   toneDepth       Int      // 1..10
-  concerns        Json     // Record<Concern, 0..100>
-  foundationShade String?
+  concerns        Json     // Record<Concern, 0..100>, higher is more noticeable
+  foundationShade String?  // skin colour hex
+  personFileId    String?  // YouCam file id of the photo used for try-on
   createdAt       DateTime @default(now())
 }
 
@@ -190,8 +217,8 @@ model Product {
   brand           String
   price           Int     // cents
   imageUrl        String
-  garmentImageUrl String? // VTO source image (apparel)
-  dominantColor   Json?   // hex/Lab for harmony scoring (apparel)
+  garmentImageUrl String? // try-on source image (apparel)
+  dominantColor   Json?   // hex for harmony scoring (apparel)
   shadeMeta       Json?   // undertone/depth (beauty)
   targetsConcerns Json?   // Concern[] (beauty)
 }
@@ -228,14 +255,13 @@ model SavedLook {
 }
 ```
 
-Concern enum (app-level, `src/lib/concerns.ts`):
+Concern enum (`src/lib/concerns.ts`):
 `redness | oiliness | spots | texture | darkCircles | pores | wrinkles | acne`.
 
-> **Prisma 7 note:** `datasource.url` and the `migrations.seed` command live in
-> [`prisma.config.ts`](./prisma.config.ts), not in `schema.prisma` / `package.json` —
-> Prisma 7 removed the older config surface. The Prisma Client is instantiated with the
-> `@prisma/adapter-better-sqlite3` driver adapter in [`src/lib/db.ts`](./src/lib/db.ts);
-> the public import (`import { prisma } from '@/lib/db'`) is unchanged.
+> **Prisma 7 note:** `datasource.url` and the seed command live in
+> [`prisma.config.ts`](./prisma.config.ts), not in `schema.prisma` or `package.json`. The
+> client uses the `@prisma/adapter-better-sqlite3` driver adapter in
+> [`src/lib/db.ts`](./src/lib/db.ts).
 
 ---
 
@@ -243,22 +269,21 @@ Concern enum (app-level, `src/lib/concerns.ts`):
 
 | Method | Path | Purpose |
 |---|---|---|
-| POST | `/api/session/analyze` | Upload selfie, run skin + tone tasks, build the Skin Passport |
-| GET | `/api/session/analyze/stream` | SSE progress for analysis |
-| GET | `/api/session/passport` | Current session's Skin Passport |
-| POST | `/api/product/[id]/verdict` | Full verdict (harmony + VTO, or shade/concern match) |
-| GET | `/api/product/[id]/verdict/stream` | SSE progress for the VTO render |
-| GET | `/api/shop` | Catalog with passport-aware match badges |
+| POST | `/api/analyze` | Upload photos, run skin and tone analysis, and stream progress and the Skin Passport over SSE |
+| GET | `/api/passport` | Current session's Skin Passport |
+| GET | `/api/shop` | Catalog with personalized verdicts, best first |
+| POST | `/api/verdict` | One product's verdict, plus a try-on for apparel |
+| POST | `/api/advisor` | Ask the Advisor Agent |
 | GET/POST | `/api/cart` | Illustrative cart |
-| GET/POST | `/api/looks` / `/api/looks/[id]` | Save / fetch a Look Card |
+| POST | `/api/looks` | Save a look |
+| GET | `/api/looks/[id]` | Fetch a saved look |
 
 ---
 
 ## YouCam integration
 
-All YouCam access is isolated behind a single boundary module (`src/server/youcam/`) so
-that any drift in the API surface is quarantined to one place. It targets the YouCam
-**v2.0 REST API**:
+All YouCam access is isolated in one module (`src/server/youcam/`), so any change in the API
+surface is contained in one place. It targets the YouCam **v2.0 REST API**:
 
 - **Auth** — `Authorization: Bearer <YOUCAM_API_KEY>` on every call.
 - **`uploadImage`** — `POST /s2s/v2.0/file` for an upload slot, then `PUT` the bytes to the
@@ -277,6 +302,14 @@ Aura interprets the raw results rather than passing them through:
 - Capture sends a tight face crop to skin analysis, which needs the face to span over 60% of
   the image width, and the wider frame to clothes try-on.
 
+| Call | API units |
+|---|---|
+| Skin analysis (8 concerns) | 12 |
+| Skin tone analysis | 20 |
+| Clothes try-on | 2 |
+
+A repeat try-on of the same product within 110 minutes reuses the saved result.
+
 To check the live integration with a real photo (spends API units):
 
 ```bash
@@ -285,18 +318,40 @@ pnpm youcam:smoke path/to/selfie.jpg
 
 **Two modes, one interface**, selected by `YOUCAM_MODE`:
 
-- `fixture` — recorded responses; every test and the demo run entirely offline, at zero
-  API-unit cost. This is the default and what CI/tests always use.
-- `live` — real credentials, real network calls, real units.
+- `fixture` — prerecorded responses that run offline at zero API-unit cost. All automated
+  tests use this mode.
+- `live` — a real API key, real network calls, real units.
 
-Because both modes implement the same adapter interface, nothing above this boundary
-(orchestrators, engine, routes, UI) knows or cares which mode is active.
+Both modes share the same adapter interface, so nothing above this module knows which one is
+active.
+
+---
+
+## Advisor Agent
+
+The **Ask Aura** panel is backed by a tool-calling agent
+([`src/server/advisor/agent.ts`](./src/server/advisor/agent.ts)). The model decides which
+tools to call, up to five model calls per message, and each reply shows what it checked.
+
+| Tool | What it does |
+|---|---|
+| `get_skin_passport` | Reads undertone, depth, and concern scores |
+| `list_products` | Ranks the catalog by verdict score |
+| `get_verdict` | Returns one product's score, tier, and reasons |
+| `virtual_try_on` | Runs a YouCam try-on when the shopper asks, at most once per message |
+
+- **Grounded answers** — the system prompt tells the model to state only scores and products
+  that tools return. Scores are computed by the verdict engine, not the model.
+- **Provider fallback** — the [LLM client](./src/server/llm/client.ts) tries the preferred
+  provider, then the other one.
+- **No-model fallback** — if neither responds, the panel gives a basic answer from the real
+  verdict data and labels it as basic.
 
 ---
 
 ## Getting started
 
-Requires Node 20+ and [pnpm](https://pnpm.io).
+Requires Node 22 and [pnpm](https://pnpm.io) 11.
 
 ```bash
 # 1. Install dependencies
@@ -304,12 +359,12 @@ pnpm install
 
 # 2. Configure environment
 cp .env.example .env
-# fixture mode needs no credentials; see "Environment variables" below for live mode
+# To run without API keys, set YOUCAM_MODE=fixture in .env
 
 # 3. Create the SQLite database and apply migrations
-pnpm prisma migrate dev
+pnpm prisma migrate deploy
 
-# 4. Seed the product catalog (6 apparel + 4 beauty items)
+# 4. Seed the product catalog (7 apparel + 4 beauty items)
 pnpm prisma db seed
 
 # 5. Run the dev server
@@ -322,50 +377,61 @@ Then open [http://localhost:3000](http://localhost:3000).
 
 ## Environment variables
 
-See [`.env.example`](./.env.example) for the authoritative list.
+See [`.env.example`](./.env.example) for a starting point.
 
 | Variable | Required when | Purpose |
 |---|---|---|
-| `YOUCAM_MODE` | always | `fixture` (default, offline) or `live` |
-| `YOUCAM_BASE_URL` | always | API host matching the portal your key came from: `https://yce-api-01.perfectcorp.com`, or `https://yce-api-01.makeupar.com` for `yce.makeupar.com` (India region) |
+| `YOUCAM_MODE` | optional | `live` or `fixture`. Defaults to `fixture` if unset; `.env.example` sets `live` |
+| `YOUCAM_BASE_URL` | optional | API host matching the portal your key came from: `https://yce-api-01.makeupar.com` for `yce.makeupar.com`, or `https://yce-api-01.perfectcorp.com` (the default) for `yce.perfectcorp.com` |
 | `YOUCAM_API_KEY` | `YOUCAM_MODE=live` | API key from the console's API Keys page |
-| `LLM_PROVIDER` | optional | `groq` (default) or `openai` — preferred provider; the other is used as fallback if its key is set |
-| `GROQ_API_KEY` | Advisor Agent (P1) | Groq API key (OpenAI-compatible endpoint) |
+| `LLM_PROVIDER` | optional | `groq` (default) or `openai`: the preferred provider. The other is the fallback if its key is set |
+| `GROQ_API_KEY` | Advisor Agent | Groq API key |
 | `GROQ_MODEL` | optional | Defaults to `openai/gpt-oss-120b` |
-| `OPENAI_API_KEY` | Advisor Agent (P1) | OpenAI API key |
+| `OPENAI_API_KEY` | Advisor Agent | OpenAI API key |
 | `OPENAI_MODEL` | optional | Defaults to `gpt-4o-mini` |
-| `DATABASE_URL` | always | SQLite connection string, e.g. `file:./dev.db` |
+| `DATABASE_URL` | optional | SQLite connection string. Defaults to `file:./dev.db` |
 
-`getServerEnv()` in [`src/lib/env.ts`](./src/lib/env.ts) is the single typed accessor for
-all of the above — it throws at startup if a `live`-mode-required variable is missing,
-so misconfiguration fails fast instead of surfacing as a mysterious runtime error.
+`getServerEnv()` in [`src/lib/env.ts`](./src/lib/env.ts) is the single typed accessor for all
+of the above. It throws when read in live mode without an API key, so misconfiguration fails
+with a clear message. The advisor needs at least one LLM key; without one, it gives the basic
+answer described above.
+
+---
+
+## Deployment
+
+[`render.yaml`](./render.yaml) deploys Aura on Render: choose **New > Blueprint**, select this
+repository, and enter `YOUCAM_API_KEY`, `GROQ_API_KEY`, and `OPENAI_API_KEY`. It runs on
+Render's free plan, where the service sleeps when idle and the database is rebuilt on every
+start, so saved Passports are lost and shoppers retake their selfie.
 
 ---
 
 ## Testing
 
 ```bash
-# Unit tests (color math, env, domain types, scoring — no network)
+# Unit, contract, and integration tests
 pnpm vitest run
 
-# Watch mode
-pnpm vitest
-
-# End-to-end (Playwright, drives the full flow against YOUCAM_MODE=fixture)
+# End-to-end browser tests
 pnpm playwright test
+
+# Type check
+pnpm tsc --noEmit
 ```
 
-Testing strategy, by layer:
+Current results: **88 Vitest tests** across 19 files and **13 Playwright tests** pass.
 
-- **Unit** — the color-harmony engine (table-driven undertone × color), the Skin
-  Passport normalizer, and the verdict scorer are pure functions tested with plain
-  input/output assertions — zero API cost, zero mocking needed.
-- **Contract** — YouCam adapters are tested against recorded fixtures, locking our
-  TypeScript types to real observed payloads.
-- **E2E** — Playwright drives onboarding → shop → PDP verdict end-to-end in fixture mode.
+- **Unit** — the color-harmony engine, the Skin Passport normalizer, and the verdict scorer
+  are pure functions tested with plain input/output assertions.
+- **Contract** — the YouCam client and adapters are tested against mocked responses in the
+  documented v2.0 format. The real API was checked separately with `pnpm youcam:smoke`.
+- **Integration** — orchestrators and the Advisor Agent's tool loop run against the database,
+  with scripted model replies.
+- **E2E** — Playwright covers the landing page, shop, product page, cart, dashboard, and Ask
+  Aura panel in fixture mode, with stubbed model replies. It doesn't drive the camera.
 
-`YOUCAM_MODE=fixture` is used for all automated tests and the default local dev
-experience, so nothing in this repo's test suite ever spends a real YouCam unit.
+Automated tests never spend YouCam units or call an LLM.
 
 ---
 
@@ -374,21 +440,31 @@ experience, so nothing in this repo's test suite ever spends a real YouCam unit.
 ```
 aura/
 ├─ prisma/
-│  ├─ schema.prisma       # data model
-│  ├─ seed.ts             # 6 apparel + 4 beauty seed products
+│  ├─ schema.prisma        # data model
+│  ├─ seed.ts              # 7 apparel + 4 beauty products
 │  └─ migrations/
-├─ prisma.config.ts       # Prisma 7 config (datasource url, seed command)
+├─ prisma.config.ts        # Prisma 7 config (datasource url, seed command)
+├─ render.yaml             # Render Blueprint
+├─ public/seed/            # product photos
+├─ fixtures/youcam/        # prerecorded responses for fixture mode
+├─ scripts/
+│  └─ youcam-smoke.ts      # live API check with a real photo
 ├─ src/
-│  ├─ app/                # Next.js App Router pages + route handlers
-│  ├─ lib/
-│  │  ├─ env.ts           # typed server env accessor
-│  │  ├─ db.ts            # Prisma client (driver-adapter wired)
-│  │  ├─ color.ts         # hex → CIELAB, ΔE (color-harmony primitives)
-│  │  └─ concerns.ts      # shared domain constants/types
+│  ├─ app/                 # pages and route handlers
+│  ├─ components/          # UI, including capture and the Ask Aura panel
+│  ├─ domain/              # pure logic: harmony, Skin Passport, verdict scoring
+│  ├─ lib/                 # env, database client, color math, shared constants
+│  ├─ middleware.ts        # session cookie
 │  └─ server/
-│     └─ youcam/          # auth, upload, task run/poll, feature adapters, fixtures
+│     ├─ advisor/          # Advisor Agent and its tools
+│     ├─ llm/              # Groq/OpenAI client with fallback
+│     ├─ orchestrators/    # skin analysis and verdict/try-on flows
+│     ├─ repos/            # database access
+│     └─ youcam/           # API client and feature adapters
 └─ tests/
    ├─ unit/
+   ├─ contract/
+   ├─ integration/
    └─ e2e/
 ```
 
@@ -397,150 +473,43 @@ aura/
 ## Security & privacy
 
 - Secrets (`YOUCAM_API_KEY`, `GROQ_API_KEY`, `OPENAI_API_KEY`) are read only via
-  `getServerEnv()` inside server-only code — never bundled into client JavaScript, never
-  echoed in a response body. `YOUCAM_MODE=live` fails on first use if the API key is missing.
-- Selfies are relayed server-side to YouCam and are not retained beyond the session's
-  lifetime in our own store, consistent with YouCam's own 24h file-retention window.
-  Explicit consent copy is shown at capture time.
-- Task calls are keyed by `(sessionId, feature, fileId)` so that an SSE client
-  reconnecting mid-analysis can never trigger a duplicate (and double-billed) YouCam job.
+  `getServerEnv()` in server-side code. They are never bundled into client JavaScript or
+  returned in a response.
+- Selfies are relayed server-side to YouCam and are not stored in Aura's database. Aura keeps
+  only the resulting Skin Passport and YouCam's file ID, which is never sent to the browser.
+  YouCam's documentation says uploaded files are kept for 30 days.
+- Database errors are logged on the server and replaced with a plain message for the shopper.
 
 ---
 
-## Build status
+## Known limitations
 
-This repository was built task-by-task against a 20-task P0 implementation plan
-(TDD throughout — every module landed with its test written first). All 20 tasks are
-complete — see [Build Status (P0 Submission)](#build-status-p0-submission) below for the
-full task-by-task breakdown, current test counts, and how to run the app.
-
-P0 is scoped deliberately to have **zero LLM dependency** — the Advisor Agent
-(§ *Agentic layer* in the design spec) is a P1 addition on top of a fully working,
-deterministic P0 storefront.
-
----
-
-## Build Status (P0 Submission)
-
-✅ **Complete (Tasks 1–20)**
-
-### Completed Tasks
-- [x] Task 1: Environment & typed config
-- [x] Task 2: Prisma schema + adapter + seed (6 apparel, 4 beauty)
-- [x] Task 3: Color math (sRGB → CIELAB, ΔE)
-- [x] Task 4: Domain types (concerns, undertones, tiers)
-- [x] Task 5: Color harmony engine
-- [x] Task 6: Skin passport normalizer
-- [x] Task 7: Verdict scorer (apparel + beauty)
-- [x] Task 8: YouCam auth token manager + RSA + caching
-- [x] Task 9: YouCam low-level client (upload/run/poll)
-- [x] Task 10: YouCam adapters + fixtures (skin-analysis, skin-tone, cloth)
-- [x] Task 11: Repositories (session, passport, product, verdict, cart, look)
-- [x] Task 12: Session middleware (httpOnly cookies, 30d expiry)
-- [x] Task 13: Skin orchestrator + `/api/analyze`, `/api/passport` (SSE progress)
-- [x] Task 14: Verdict orchestrator + `/api/verdict` (apparel VTO + beauty shade match)
-- [x] Task 15: Shop personalization `/api/shop` (sorted by verdict tier)
-- [x] Task 16: Cart & Looks routes (`/api/cart`, `/api/looks`)
-- [x] Task 17: Onboarding capture UI (selfie camera, SSE progress, passport display)
-- [x] Task 18: Storefront UI (landing, `/shop`, `/shop/[id]`, `/dashboard`, `/cart`, shadcn/ui) —
-  reused the pre-existing polished landing page (`src/app/page.tsx`, with `Navbar` /
-  `HeroSection` / `PipelineSection` / `PassportSimulator` / `VtoShowcaseSection` /
-  `ProductGridSection` / `ArchitectureSection` / `FaqSection` / `Footer`) rather than a bare
-  scaffold
-- [x] Task 19: Playwright e2e tests (user journey: landing → onboarding → shop → cart)
-- [x] Task 20: README + live-mode checklist (this document + [`LIVE_MODE_CHECKLIST.md`](LIVE_MODE_CHECKLIST.md))
-
-### Test Summary
-- **Unit / integration / contract tests**: 38/38 passing across 18 test files
-- **E2E tests (Playwright)**: 9/9 passing
-- **Total**: **47/47 tests passing**
-- `pnpm tsc --noEmit`: **0 errors** (full strict typecheck)
-- `pnpm build`: succeeds (Next.js 16.2.10, Turbopack) — all 14 routes render
-  (5 pages + 1 dynamic PDP + 8 API routes)
-
-### How to Run (Fixture Mode — Zero API Cost)
-
-Fixture mode uses prerecorded YouCam API responses and runs offline:
-
-```bash
-# Install dependencies
-pnpm install
-
-# Run database migrations
-pnpm prisma migrate dev
-
-# Seed catalog (6 apparel, 4 beauty)
-pnpm prisma db seed
-
-# Run all tests
-pnpm test
-
-# Start the app
-pnpm dev
-# Open http://localhost:3000
-
-# Run e2e tests (requires `pnpm dev` running)
-pnpm exec playwright test
-```
-
-### User Journey (P0 Demo)
-1. **Landing** (`/`): Hero — *"One Selfie. Two Verdicts. Zero Guesswork."* — plus pipeline,
-   passport simulator, VTO showcase, and product grid sections
-2. **Onboarding** (`/onboarding`): "Capture Your Aura" CTA → camera capture → selfie → SSE
-   analysis stream → SkinPassport display
-3. **Shop** (`/shop`): Personalized product grid, sorted by verdict tier (buy → maybe → skip)
-4. **Product Detail** (`/shop/[id]`): Product info + VTO widget (apparel), Verdict badge, Add to Cart
-5. **Cart** (`/cart`): Cart summary
-6. **Dashboard** (`/dashboard`): Session stats (cart count, saved looks, history)
-
-### Known Issues / P1 Follow-ups
-
-These are known, non-blocking gaps — documented so judges aren't surprised by them:
-
-1. **The catalog is a demo.** Products are fictional and use Pexels photos, credited in
-   [`public/seed/CREDITS.md`](./public/seed/CREDITS.md).
-2. **Middleware requires the Node.js runtime.** `src/middleware.ts` needs
-   `export const config = { runtime: 'nodejs' }` (added in Task 19) because it imports
-   Prisma/`better-sqlite3`, which needs Node's `fs` module — Next.js 16 defaults
-   middleware to the Edge runtime, which doesn't support `fs`. This is already fixed;
-   noted here as a resolved gotcha for anyone touching middleware in the future.
-3. **Deprecation warning on build.** `pnpm build` emits: *"The middleware file
-   convention is deprecated. Please use 'proxy' instead."* (Next.js 16). Functionally
-   harmless today; should be migrated to the `proxy` convention in a future cleanup pass.
-
-### Architecture Highlights
-- **Unification thesis**: One selfie → SkinPassport (undertone + depth + concerns + topConcern) → one verdict engine drives BOTH apparel (color harmony) and beauty (shade match + concern targeting).
-- **YouCam integration**: v2.0 REST API with API-key auth, file upload, async task polling, bounded backoff.
-- **Adapters**: All YouCam risk quarantined to `src/server/youcam/` module; fixture mode for testing/demo.
-- **Data model**: Prisma 7 + better-sqlite3 for local dev, SkinPassport/Verdict/Product normalized + JSON fields for concerns/targets.
-- **Verdict scoring**: Apparel: harmony score + monotonic +15 boost → buy/maybe/skip. Beauty: undertone match (0–60) + depth penalty + concern targeting → score.
-- **Storefront**: Computed verdicts per session, sorted by tier, SSE progress on analysis.
-
----
-
-## Live Mode (Real YouCam API)
-
-To test with real YouCam API credentials and pay-per-analysis units, see
-[LIVE_MODE_CHECKLIST.md](LIVE_MODE_CHECKLIST.md).
+1. **The catalog is a demo.** Products are fictional and use free stock photos from Pexels.
+2. **Undertone is an estimate.** It comes from fixed CIELAB hue thresholds that haven't been
+   validated across a broad range of real skin tones.
+3. **Fixture try-on is a placeholder.** In fixture mode, every try-on returns the same image.
+4. **Saved looks aren't wired up.** The Save Look button has no action yet, though the API
+   routes exist.
+5. **The advisor has no per-visitor limit.** Set spending limits on your LLM accounts before
+   deploying publicly.
+6. **The advisor's grounding relies on its prompt.** Scores come from tools, but the model's
+   wording isn't checked in code and can occasionally overstate a product.
+7. **Middleware needs the Node.js runtime.** `src/middleware.ts` keeps
+   `export const config = { runtime: 'nodejs' }` because it imports Prisma and
+   `better-sqlite3`. `pnpm build` also warns that Next.js 16 prefers the `proxy` convention,
+   which is harmless for now.
 
 ---
 
 ## Roadmap
 
-- **P0** (this repo's current focus) — full camera-to-verdict story: capture → Skin
-  Passport → personalized shop → one apparel verdict (harmony + VTO) → one beauty
-  verdict (shade/concern) → `/me` dashboard → Look Card.
-- **P1** — **Built:** Groq/OpenAI-powered Advisor Agent ([`src/server/advisor/agent.ts`](./src/server/advisor/agent.ts)): a tool-use loop that reads the Skin Passport,
-  calls the harmony engine / VTO orchestrator / catalog as tools, and composes grounded
-  rationale + next-best-action — orchestrating and explaining, never inventing scores.
-- **P2** — cart flow polish, shareable `/looks/[id]` permalinks, multi-item wardrobe view.
-
----
-
-Built for the Perfect Corp. YouCam API Skin AI & Apparel VTO Hackathon.
+- **Next** — wire up Save Look and a dashboard Skin Passport view with YouCam's concern overlay
+  images.
+- **Later** — makeup try-on combined with clothes try-on into one "full look", and shareable
+  look pages.
 
 ---
 
 ## License
 
-[MIT](./LICENSE). The product photos in `public/seed/` are from Pexels under their own terms; see [`public/seed/CREDITS.md`](./public/seed/CREDITS.md).
+[MIT](./LICENSE). The product photos in `public/seed/` are from Pexels under their own terms.
