@@ -100,14 +100,16 @@ flowchart TD
         SkinO["Skin Orchestrator"]
         Harmony["Color-Harmony Engine · pure"]
         VtoO["VTO Orchestrator"]
-        Agent["Advisor Agent · Claude + tools"]
+        Agent["Advisor Agent · LLM + tools"]
+        LlmC["LLM Client<br/>provider routing · fallback"]
         YC["YouCam Service<br/>auth · upload · run · poll"]
         DB[("(SQLite via Prisma)")]
     end
 
     subgraph External
         YCAPI["YouCam API<br/>skin-analysis · skin-tone · cloth"]
-        Claude["Claude API"]
+        Groq["Groq API (primary)"]
+        OpenAI["OpenAI API (fallback)"]
     end
 
     Onb -.SSE progress.- Sess
@@ -115,13 +117,14 @@ flowchart TD
     SkinO --> DB
     PDP --> Agent
     Agent -->|tools| Harmony & VtoO & DB
-    Agent --> Claude
+    Agent --> LlmC
+    LlmC --> Groq & OpenAI
     VtoO --> YC
 ```
 
 - **Server Components** render the catalog and passport-aware badges (`/shop`, `/me`).
 - **Client Components** handle capture, SSE progress, the VTO viewer, and gauges.
-- **Route Handlers** are the only place YouCam/Claude credentials exist.
+- **Route Handlers** are the only place YouCam/Groq/OpenAI credentials exist.
 - **Middleware** guarantees every request carries a `sessionId` cookie.
 
 ---
@@ -133,7 +136,7 @@ flowchart TD
 | Framework | Next.js (App Router), TypeScript strict |
 | UI | Tailwind CSS v4, shadcn/ui |
 | Data | Prisma ORM + SQLite (`@prisma/adapter-better-sqlite3` driver adapter, Prisma 7) |
-| External AI | YouCam S2S REST API (skin, tone, apparel VTO); Claude (P1 Advisor Agent) |
+| External AI | YouCam S2S REST API (skin, tone, apparel VTO); Groq + OpenAI via a provider-agnostic LLM client (P1 Advisor Agent) |
 | Unit tests | Vitest + Testing Library |
 | E2E tests | Playwright |
 | Package manager | pnpm (workspace-native build allowlisting for `better-sqlite3`) |
@@ -254,16 +257,31 @@ Concern enum (app-level, `src/lib/concerns.ts`):
 ## YouCam integration
 
 All YouCam access is isolated behind a single boundary module (`src/server/youcam/`) so
-that any drift in the (JS-SPA-only-documented) API surface is quarantined to one place:
+that any drift in the API surface is quarantined to one place. It targets the YouCam
+**v2.0 REST API**:
 
-- **`AuthTokenManager`** — RSA-encrypts `client_id`/`client_secret` into an `id_token` via
-  `POST /s2s/v1.0/client/auth`; caches it with pre-emptive refresh and a single silent
-  re-mint on `401`.
-- **`FileUploader`** — implements the File API's upload-URL → `PUT` bytes → confirm flow.
-- **`TaskRunner` / `TaskPoller`** — `POST /s2s/v1.0/task/<feature>` to start a job, then
-  `GET .../task/<feature>?task_id=` with bounded exponential backoff until
-  `success`/`error`.
-- **Typed feature adapters** — `skinAnalysis`, `skinTone`, `cloth`.
+- **Auth** — `Authorization: Bearer <YOUCAM_API_KEY>` on every call.
+- **`uploadImage`** — `POST /s2s/v2.0/file` for an upload slot, then `PUT` the bytes to the
+  signed URL with the headers it returned.
+- **`runTask` / `pollTask`** — `POST /s2s/v2.0/task/<feature>` to start a job, then
+  `GET /s2s/v2.0/task/<feature>/<task_id>` with bounded backoff until `task_status` is
+  `success` or `error`, waiting out rate limiting.
+- **Typed feature adapters** — `skin-analysis`, `skin-tone-analysis`, `cloth-v4`.
+
+Aura interprets the raw results rather than passing them through:
+
+- YouCam scores skin **health** (higher is healthier); the Passport ranks concerns by
+  **severity**, so scores are inverted.
+- YouCam reports a skin **colour**. Undertone (CIELAB hue angle) and depth (L\*) are derived
+  from it in [`src/domain/skin/passport.ts`](./src/domain/skin/passport.ts).
+- Capture sends a tight face crop to skin analysis, which needs the face to span over 60% of
+  the image width, and the wider frame to clothes try-on.
+
+To check the live integration with a real photo (spends API units):
+
+```bash
+pnpm youcam:smoke path/to/selfie.jpg
+```
 
 **Two modes, one interface**, selected by `YOUCAM_MODE`:
 
@@ -309,11 +327,13 @@ See [`.env.example`](./.env.example) for the authoritative list.
 | Variable | Required when | Purpose |
 |---|---|---|
 | `YOUCAM_MODE` | always | `fixture` (default, offline) or `live` |
-| `YOUCAM_BASE_URL` | always | YouCam S2S API base URL |
-| `YOUCAM_CLIENT_ID` | `YOUCAM_MODE=live` | YouCam S2S client id |
-| `YOUCAM_CLIENT_SECRET` | `YOUCAM_MODE=live` | YouCam S2S client secret (RSA-encrypted at auth time) |
-| `YOUCAM_PUBLIC_KEY` | `YOUCAM_MODE=live` | Public key used to encrypt the client secret |
-| `ANTHROPIC_API_KEY` | Advisor Agent (P1) | Claude API key for the tool-use rationale layer |
+| `YOUCAM_BASE_URL` | always | API host matching the portal your key came from: `https://yce-api-01.perfectcorp.com`, or `https://yce-api-01.makeupar.com` for `yce.makeupar.com` (India region) |
+| `YOUCAM_API_KEY` | `YOUCAM_MODE=live` | API key from the console's API Keys page |
+| `LLM_PROVIDER` | optional | `groq` (default) or `openai` — preferred provider; the other is used as fallback if its key is set |
+| `GROQ_API_KEY` | Advisor Agent (P1) | Groq API key (OpenAI-compatible endpoint) |
+| `GROQ_MODEL` | optional | Defaults to `openai/gpt-oss-120b` |
+| `OPENAI_API_KEY` | Advisor Agent (P1) | OpenAI API key |
+| `OPENAI_MODEL` | optional | Defaults to `gpt-4o-mini` |
 | `DATABASE_URL` | always | SQLite connection string, e.g. `file:./dev.db` |
 
 `getServerEnv()` in [`src/lib/env.ts`](./src/lib/env.ts) is the single typed accessor for
@@ -376,10 +396,9 @@ aura/
 
 ## Security & privacy
 
-- Secrets (`YOUCAM_CLIENT_ID`, `YOUCAM_CLIENT_SECRET`, `YOUCAM_PUBLIC_KEY`,
-  `ANTHROPIC_API_KEY`) are read only via `getServerEnv()` inside server-only code —
-  never bundled into client JavaScript, never echoed in a response body.
-  `YOUCAM_MODE=live` fails fast at startup if any required credential is missing.
+- Secrets (`YOUCAM_API_KEY`, `GROQ_API_KEY`, `OPENAI_API_KEY`) are read only via
+  `getServerEnv()` inside server-only code — never bundled into client JavaScript, never
+  echoed in a response body. `YOUCAM_MODE=live` fails on first use if the API key is missing.
 - Selfies are relayed server-side to YouCam and are not retained beyond the session's
   lifetime in our own store, consistent with YouCam's own 24h file-retention window.
   Explicit consent copy is shown at capture time.
@@ -478,11 +497,8 @@ pnpm exec playwright test
 
 These are known, non-blocking gaps — documented so judges aren't surprised by them:
 
-1. **Product seed images are missing on disk.** `public/seed/*.jpg` (jacket, blouse,
-   sweater, shirt, coat, dress, serum, foundation-3w, foundation-5c, concealer) do not
-   exist, so every product image renders broken (404) in both fixture and live mode.
-   Pages still function correctly (all data, verdicts, and cart flows work) — this is
-   purely cosmetic. Recommend adding placeholder or real images before a live demo.
+1. **The catalog is a demo.** Products are fictional and use Pexels photos, credited in
+   [`public/seed/CREDITS.md`](./public/seed/CREDITS.md).
 2. **Middleware requires the Node.js runtime.** `src/middleware.ts` needs
    `export const config = { runtime: 'nodejs' }` (added in Task 19) because it imports
    Prisma/`better-sqlite3`, which needs Node's `fs` module — Next.js 16 defaults
@@ -494,7 +510,7 @@ These are known, non-blocking gaps — documented so judges aren't surprised by 
 
 ### Architecture Highlights
 - **Unification thesis**: One selfie → SkinPassport (undertone + depth + concerns + topConcern) → one verdict engine drives BOTH apparel (color harmony) and beauty (shade match + concern targeting).
-- **YouCam integration**: S2S REST API with RSA-encrypted auth, file upload, async task polling, exponential backoff.
+- **YouCam integration**: v2.0 REST API with API-key auth, file upload, async task polling, bounded backoff.
 - **Adapters**: All YouCam risk quarantined to `src/server/youcam/` module; fixture mode for testing/demo.
 - **Data model**: Prisma 7 + better-sqlite3 for local dev, SkinPassport/Verdict/Product normalized + JSON fields for concerns/targets.
 - **Verdict scoring**: Apparel: harmony score + monotonic +15 boost → buy/maybe/skip. Beauty: undertone match (0–60) + depth penalty + concern targeting → score.
@@ -514,7 +530,7 @@ To test with real YouCam API credentials and pay-per-analysis units, see
 - **P0** (this repo's current focus) — full camera-to-verdict story: capture → Skin
   Passport → personalized shop → one apparel verdict (harmony + VTO) → one beauty
   verdict (shade/concern) → `/me` dashboard → Look Card.
-- **P1** — Claude-powered Advisor Agent: a tool-use loop that reads the Skin Passport,
+- **P1** — **Built:** Groq/OpenAI-powered Advisor Agent ([`src/server/advisor/agent.ts`](./src/server/advisor/agent.ts)): a tool-use loop that reads the Skin Passport,
   calls the harmony engine / VTO orchestrator / catalog as tools, and composes grounded
   rationale + next-best-action — orchestrating and explaining, never inventing scores.
 - **P2** — cart flow polish, shareable `/looks/[id]` permalinks, multi-item wardrobe view.

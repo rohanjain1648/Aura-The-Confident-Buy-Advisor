@@ -82,10 +82,10 @@ flowchart TD
     VtoO --> YC
 ```
 
-1. **Zero Client Key Exposure**: All YouCam S2S API keys and RSA auth tokens exist exclusively inside server-side Route Handlers. Client components only see sanitized, pre-scored JSON.
+1. **Zero Client Key Exposure**: The YouCam API key exists exclusively inside server-side Route Handlers. Client components only see sanitized, pre-scored JSON.
 2. **Dual-Mode Adapter Pattern**:
    - `fixture` mode: Runs with offline pre-recorded API responses for instant testing and zero-cost judging demos.
-   - `live` mode: Connects to live YouCam S2S REST APIs with RSA-encrypted token management, upload signing, and task polling with exponential backoff.
+   - `live` mode: Connects to the YouCam v2.0 REST API with API-key auth, signed uploads, and task polling with bounded backoff.
 3. **Pure CIELAB Color Engine**: Converts RGB/Hex pigments into 3D L*a*b* space to compute Euclidean color distance (ΔE), mapping skin undertone hues to seasonal garment harmony palettes.
 
 ---
@@ -113,14 +113,14 @@ flowchart TD
 ## 6. What We Learned
 
 - **Color Science & Perceptual Psychology**: How CIELAB L*a*b* color space provides far more accurate clothing recommendations than basic RGB/HSL matching.
-- **S2S RSA Token Management**: Implementing RSA-encrypted client authentication and silent pre-emptive token refreshing.
+- **Reading Raw Skin Data**: Turning YouCam's health scores and skin colour into ranked concerns, undertone, and depth.
 - **Unified E-Commerce Architecture**: Proving that skin AI and apparel VTO are significantly more powerful when sharing a single user passport context.
 
 ---
 
 ## 7. What's Next for Aura (Roadmap)
 
-- **P1 Advisor Agent**: Integrate Claude 3.5 Sonnet to provide natural language styling advice ("Why does this Emerald coat complement my undertone?").
+- **P1 Advisor Agent**: Integrate Groq (GPT-OSS 120B) with OpenAI as fallback to provide natural language styling advice ("Why does this Emerald coat complement my undertone?").
 - **Shopify & Commerce Layer Integration**: Package Aura as an embeddable Shopify App extension for merchant storefronts.
 - **Multi-Garment Outfit Layering**: Support simultaneous outfit try-ons (top + bottom + outerwear) powered by YouCam's multi-cloth pipeline.
 

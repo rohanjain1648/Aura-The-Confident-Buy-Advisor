@@ -10,9 +10,9 @@ Before deploying, configure the following environment variables on your hosting 
 
 | Variable Name | Required? | Example Value | Description |
 |---|---|---|---|
-| `YOUCAM_MODE` | **Yes** | `fixture` *(or `live`)* | Set to `fixture` for zero-cost offline mock responses; set to `live` for real YouCam S2S REST APIs. |
-| `YOUCAM_CLIENT_ID` | If `live` | `your_youcam_client_id` | YouCam Developer Portal Client ID |
-| `YOUCAM_CLIENT_SECRET` | If `live` | `your_youcam_client_secret` | YouCam Developer Portal Client Secret |
+| `YOUCAM_MODE` | **Yes** | `fixture` *(or `live`)* | Set to `fixture` for zero-cost offline mock responses; set to `live` for the real YouCam v2.0 API. |
+| `YOUCAM_API_KEY` | If `live` | `your_youcam_api_key` | From the YouCam console's API Keys page |
+| `YOUCAM_BASE_URL` | If `live` | `https://yce-api-01.makeupar.com` | API host matching the portal that issued the key (`yce-api-01.perfectcorp.com` for the global portal) |
 | `SESSION_SECRET` | **Yes** | `8f92a14b7c6d3e5f1029384756102938` | Secret key used for signing session cookies |
 | `NODE_ENV` | **Yes** | `production` | Production environment flag |
 | `DATABASE_URL` | **Yes** | `file:./dev.db` | SQLite database connection string |

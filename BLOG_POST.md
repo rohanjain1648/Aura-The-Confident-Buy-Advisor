@@ -117,9 +117,9 @@ All interactions with Perfect Corp's YouCam S2S REST API take place inside Next.
 
 We quarantined all YouCam API complexity into four isolated modules:
 
-1. **`AuthTokenManager`**: RSA-encrypts `client_id` and `client_secret` using PKCS#1 padding to fetch S2S JWT tokens. It maintains an in-memory token cache with pre-emptive refresh and single-retry recovery on `401 Unauthorized`.
-2. **`FileUploader`**: Handles YouCam’s 3-step file upload workflow: request upload URL $\rightarrow$ `PUT` binary image bytes $\rightarrow$ confirm upload.
-3. **`TaskRunner` & `TaskPoller`**: Initiates async jobs (`POST /s2s/v1.0/task/<feature>`) and polls with bounded exponential backoff until completion.
+1. **API-key auth**: Every call carries the key as a Bearer token, read only in server-side code.
+2. **File upload**: Handles YouCam’s upload workflow: request an upload slot (`POST /s2s/v2.0/file`) $\rightarrow$ `PUT` binary image bytes to the signed URL.
+3. **Task runner & poller**: Initiates async jobs (`POST /s2s/v2.0/task/<feature>`) and polls `/task/<feature>/<task_id>` with bounded backoff until completion, waiting out rate limits.
 4. **Dual Adapter Architecture**:
    - `FixtureAdapter`: Uses pre-recorded JSON responses. Enables instant offline execution, automated testing, and zero-cost judging demos.
    - `LiveAdapter`: Connects to real YouCam REST endpoints when credentials are configured.
@@ -216,7 +216,7 @@ Result: **47/47 tests passing**.
 
 Aura P0 delivers a fully functional, zero-guesswork decision engine. Looking forward, our roadmap includes:
 
-1. **P1 Advisor Agent**: Integrating Claude 3.5 Sonnet to provide natural language styling advice ("Why does this Emerald coat complement my undertone?").
+1. **P1 Advisor Agent**: Integrating Groq (GPT-OSS 120B) with OpenAI as fallback to provide natural language styling advice ("Why does this Emerald coat complement my undertone?").
 2. **Shopify Embeddable Extension**: Packaging Aura into a turnkey Shopify App for merchants to install on existing storefronts.
 3. **Multi-Garment Outfit Layering**: Extending YouCam's `cloth` API integration to render complete layered outfits (top + pants + outerwear) simultaneously.
 
