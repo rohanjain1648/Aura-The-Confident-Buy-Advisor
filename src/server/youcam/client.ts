@@ -1,87 +1,133 @@
 import { getServerEnv } from '@/lib/env';
-import { AuthTokenManager } from './auth';
+import type { YouCamErrorBody, YouCamFileResponse, YouCamPollResponse, YouCamRunResponse } from './types';
+
+export class YouCamError extends Error {
+  constructor(message: string, readonly code?: string, readonly httpStatus?: number) {
+    super(message);
+    this.name = 'YouCamError';
+  }
+}
+
+const SHOPPER_MESSAGES: Record<string, string> = {
+  error_src_face_too_small: 'Your face looks too small in the photo. Move closer so it fills the oval, then try again.',
+  error_src_face_out_of_bound: 'Part of your face is out of frame. Centre it in the oval and try again.',
+  error_lighting_dark: 'The photo is too dark. Face a window or a light and try again.',
+  error_below_min_image_size: 'The photo resolution is too low. Try a sharper photo.',
+  error_exceed_max_image_size: 'The photo is too large. Try a smaller one.',
+  exceed_max_filesize: 'The photo is too large (10 MB maximum). Try a smaller one.',
+  error_nsfw_content_detected: 'This photo could not be processed. Please use a different one.',
+};
+
+/** Message safe to show the shopper. Never includes credentials. */
+export function describeYouCamError(err: unknown): string {
+  if (err instanceof YouCamError) {
+    if (err.httpStatus === 401 || err.code === 'InvalidApiKey' || err.code === 'InvalidAccessToken') {
+      return 'YouCam rejected the API key. Check that YOUCAM_API_KEY is set and matches the portal for YOUCAM_BASE_URL.';
+    }
+    if (err.code && SHOPPER_MESSAGES[err.code]) return SHOPPER_MESSAGES[err.code];
+  }
+  if (err instanceof Error && err.name.startsWith('PrismaClient')) {
+    console.error(err);
+    return 'We could not save your results. Please try again.';
+  }
+  return err instanceof Error ? err.message : String(err);
+}
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export class YouCamClient {
-  private auth: AuthTokenManager;
+  constructor(private fetchImpl: typeof fetch = (input, init) => fetch(input, init)) {}
 
-  constructor(private fetchImpl: typeof fetch = fetch) {
-    this.auth = new AuthTokenManager(fetchImpl);
-  }
-
-  private async headers() {
+  private headers() {
     return {
-      Authorization: `Bearer ${await this.auth.getToken()}`,
+      Authorization: `Bearer ${getServerEnv().YOUCAM_API_KEY}`,
       'Content-Type': 'application/json',
     };
   }
 
-  private base() {
-    return getServerEnv().YOUCAM_BASE_URL;
+  private url(path: string) {
+    return `${getServerEnv().YOUCAM_BASE_URL}/s2s/v2.0${path}`;
   }
 
-  async uploadImage(bytes: Buffer, contentType: string): Promise<string> {
+  private async fail(res: Response, context: string): Promise<never> {
+    const body = (await res.json().catch(() => ({}))) as YouCamErrorBody;
+    throw new YouCamError(
+      `YouCam ${context} failed: ${res.status} ${body.error ?? ''}`.trim(),
+      body.error_code ?? body.error,
+      res.status,
+    );
+  }
+
+  async uploadImage(bytes: Buffer, contentType: string, fileName = 'selfie.jpg'): Promise<string> {
     if (getServerEnv().YOUCAM_MODE === 'fixture') {
       return 'fixture-file-id';
     }
-    // 1) Request an upload URL via POST /s2s/v1.0/file/image
-    // 2) PUT the bytes to the signed URL
-    // 3) Return the file_id
-    const res = await this.fetchImpl(`${this.base()}/s2s/v1.0/file/image`, {
+    // 1) Ask for an upload slot  2) PUT the bytes to the signed URL with the headers it came with
+    const res = await this.fetchImpl(this.url('/file'), {
       method: 'POST',
-      headers: await this.headers(),
+      headers: this.headers(),
       body: JSON.stringify({
-        files: [{ content_type: contentType, file_name: 'selfie.jpg' }],
+        files: [{ content_type: contentType, file_name: fileName, file_size: bytes.length }],
       }),
     });
-    const { result } = await res.json() as { result: { files: { file_id: string; requests: { url: string; method: string; headers?: Record<string, string> }[] }[] } };
-    const file = result.files[0];
+    if (!res.ok) await this.fail(res, 'file request');
+
+    const { data } = (await res.json()) as YouCamFileResponse;
+    const file = data.files[0];
     const put = file.requests[0];
-    await this.fetchImpl(put.url, {
+    const uploaded = await this.fetchImpl(put.url, {
       method: put.method ?? 'PUT',
       headers: put.headers ?? { 'Content-Type': contentType },
       body: new Uint8Array(bytes),
     });
+    if (!uploaded.ok) throw new YouCamError(`YouCam file upload failed: ${uploaded.status}`, undefined, uploaded.status);
     return file.file_id;
   }
 
   async runTask(feature: string, body: unknown): Promise<string> {
-    const res = await this.fetchImpl(`${this.base()}/s2s/v1.0/task/${feature}`, {
+    const res = await this.fetchImpl(this.url(`/task/${feature}`), {
       method: 'POST',
-      headers: await this.headers(),
+      headers: this.headers(),
       body: JSON.stringify(body),
     });
-    if (!res.ok) throw new Error(`runTask ${feature} failed: ${res.status}`);
-    const { result } = await res.json() as { result: { task_id: string } };
-    return result.task_id;
+    if (!res.ok) await this.fail(res, `${feature} request`);
+    const { data } = (await res.json()) as YouCamRunResponse;
+    return data.task_id;
   }
 
-  async pollTask(feature: string, taskId: string, opts: { timeoutMs?: number } = {}): Promise<unknown> {
-    const deadline = Date.now() + (opts.timeoutMs ?? 60_000);
-    let delay = 800; // Start with 800ms, exponential backoff
+  async pollTask(
+    feature: string,
+    taskId: string,
+    opts: { timeoutMs?: number; intervalMs?: number } = {},
+  ): Promise<unknown> {
+    const deadline = Date.now() + (opts.timeoutMs ?? 120_000);
+    // The API allows 250 requests per 300s, so stay well under one request per second.
+    let delay = opts.intervalMs ?? 2_000;
 
     while (Date.now() < deadline) {
-      const res = await this.fetchImpl(
-        `${this.base()}/s2s/v1.0/task/${feature}?task_id=${taskId}`,
-        { headers: await this.headers() }
-      );
-      const { result } = await res.json() as {
-        result: {
-          status: string;
-          polling_interval?: number;
-          result?: unknown;
-          error?: string;
-        };
-      };
+      const res = await this.fetchImpl(this.url(`/task/${feature}/${encodeURIComponent(taskId)}`), {
+        headers: this.headers(),
+        cache: 'no-store',
+      });
 
-      if (result.status === 'success') return result.result;
-      if (result.status === 'error') throw new Error(`task ${feature} error: ${result.error ?? 'unknown'}`);
+      // Rate limiting and server hiccups are worth waiting out; anything else is final.
+      if (res.status !== 429 && res.status < 500) {
+        if (!res.ok) await this.fail(res, `${feature} status check`);
+        const { data } = (await res.json()) as YouCamPollResponse;
+        if (process.env.YOUCAM_DEBUG) console.debug(`[youcam] ${feature}`, JSON.stringify(data));
+        if (data.task_status === 'success') return data.results;
+        if (data.task_status === 'error') {
+          throw new YouCamError(
+            `YouCam ${feature} failed: ${data.error_message ?? data.error ?? 'unknown error'}`,
+            data.error ?? undefined,
+          );
+        }
+      }
 
-      // Use server's polling_interval if provided, else exponential backoff (max 4s)
-      const wait = (result.polling_interval ?? 0) * 1000 || Math.min(delay, 4000);
-      await new Promise((r) => setTimeout(r, wait));
-      delay *= 1.5;
+      await sleep(delay);
+      delay = Math.min(delay * 1.5, 6_000);
     }
 
-    throw new Error(`task ${feature} timed out`);
+    throw new YouCamError(`YouCam ${feature} timed out`, 'timeout');
   }
 }
