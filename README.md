@@ -538,3 +538,9 @@ To test with real YouCam API credentials and pay-per-analysis units, see
 ---
 
 Built for the Perfect Corp. YouCam API Skin AI & Apparel VTO Hackathon.
+
+---
+
+## License
+
+[MIT](./LICENSE). The product photos in `public/seed/` are from Pexels under their own terms; see [`public/seed/CREDITS.md`](./public/seed/CREDITS.md).

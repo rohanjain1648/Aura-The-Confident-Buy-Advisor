@@ -8,7 +8,7 @@ const prisma = new PrismaClient({ adapter });
 
 async function main() {
   await prisma.product.deleteMany();
-  await prisma.product.createMany({ data: [
+  const products = [
     { category: 'apparel', name: 'Olive Hooded Parka', brand: 'Aura Studio', price: 12900,
       imageUrl: '/seed/olive-parka.jpg', garmentImageUrl: '/seed/olive-parka.jpg',
       dominantColor: { hex: '#6F6A4A' } },
@@ -42,7 +42,11 @@ async function main() {
     { category: 'beauty', name: 'Bright Eyes Concealer', brand: 'Aura Skin', price: 3200,
       imageUrl: '/seed/concealer.jpg', shadeMeta: { undertone: 'warm', depth: 4 },
       targetsConcerns: ['darkCircles'] },
-  ] });
+  ];
+  // Stable ids keep product links working when the database is rebuilt.
+  await prisma.product.createMany({
+    data: products.map((p) => ({ ...p, id: p.name.toLowerCase().replace(/\s+/g, '-') })),
+  });
 }
 
 main().finally(() => prisma.$disconnect());

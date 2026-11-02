@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: aura-confident-buy
+    runtime: node
+    plan: free
+    buildCommand: npx --yes pnpm@11.2.2 install --frozen-lockfile --prod=false && npx --yes pnpm@11.2.2 prisma generate && npx --yes pnpm@11.2.2 build
+    # The database lives on the instance's disk, so it is rebuilt on every start.
+    startCommand: npx --yes pnpm@11.2.2 prisma migrate deploy && npx --yes pnpm@11.2.2 prisma db seed && npx --yes pnpm@11.2.2 start
+    envVars:
+      - key: NODE_VERSION
+        value: 22.14.0
+      - key: DATABASE_URL
+        value: file:./dev.db
+      - key: YOUCAM_MODE
+        value: live
+      - key: YOUCAM_BASE_URL
+        value: https://yce-api-01.makeupar.com
+      - key: LLM_PROVIDER
+        value: groq
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-120b
+      - key: OPENAI_MODEL
+        value: gpt-4o-mini
+      # Secrets: Render asks for these when the Blueprint is created.
+      - key: YOUCAM_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
