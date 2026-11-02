@@ -41,9 +41,10 @@ export async function GET(request: NextRequest) {
       }),
     }));
 
-    // Sort by tier: buy (70+) → maybe (45-69) → skip (<45)
+    // Sort by tier: buy (70+) → maybe (45-69) → skip (<45), best score first within each
     const tierOrder = { buy: 0, maybe: 1, skip: 2 };
-    withVerdicts.sort((a, b) => tierOrder[a.verdict.tier] - tierOrder[b.verdict.tier]);
+    withVerdicts.sort((a, b) =>
+      tierOrder[a.verdict.tier] - tierOrder[b.verdict.tier] || b.verdict.score - a.verdict.score);
 
     return NextResponse.json({ products: withVerdicts });
   } catch (err) {
