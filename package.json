@@ -2,10 +2,11 @@
   "name": "aura",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@11.2.2",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
+    "build": "prisma generate && next build",
+    "start": "prisma migrate deploy && prisma db seed && next start",
     "lint": "eslint",
     "youcam:smoke": "tsx scripts/youcam-smoke.ts"
   },

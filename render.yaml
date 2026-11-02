@@ -3,9 +3,9 @@ services:
     name: aura-confident-buy
     runtime: node
     plan: free
-    buildCommand: npx --yes pnpm@11.2.2 install --frozen-lockfile --prod=false && npx --yes pnpm@11.2.2 prisma generate && npx --yes pnpm@11.2.2 build
-    # The database lives on the instance's disk, so it is rebuilt on every start.
-    startCommand: npx --yes pnpm@11.2.2 prisma migrate deploy && npx --yes pnpm@11.2.2 prisma db seed && npx --yes pnpm@11.2.2 start
+    buildCommand: npx --yes pnpm@11.2.2 install --frozen-lockfile --prod=false && npx --yes pnpm@11.2.2 build
+    # The database lives on the instance's disk, so `start` rebuilds it every time.
+    startCommand: npx --yes pnpm@11.2.2 start
     envVars:
       - key: NODE_VERSION
         value: 22.14.0
