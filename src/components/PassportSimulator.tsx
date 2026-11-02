@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Sparkles, Sliders, Check, ArrowRight, ShieldAlert, Zap, RefreshCw } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Sparkles, Sliders, Check, Zap, Layers, RefreshCw } from "lucide-react";
 import Magnetic from "./Magnetic";
 
 interface SkinProfile {
@@ -98,208 +99,202 @@ const PROFILES: SkinProfile[] = [
       title: "Radiant Skin Barrier Nourishing Drops",
       shade: "Espresso Bronze #58W",
       matchScore: 99,
-      note: "Rich warmth emphasis without gray ashiness.",
+      note: "Niacinamide + Ceramide lipid complex designed for high-melanin protection.",
     },
   },
 ];
 
 export default function PassportSimulator() {
-  const [selected, setSelected] = useState<SkinProfile>(PROFILES[0]);
-  const [activeGarmentIndex, setActiveGarmentIndex] = useState(0);
+  const [selectedProfile, setSelectedProfile] = useState<SkinProfile>(PROFILES[0]);
 
   return (
     <section id="simulator" className="py-24 px-4 sm:px-8 relative z-10">
-      <div className="max-w-7xl mx-auto space-y-16">
+      <div className="max-w-7xl mx-auto space-y-12">
         {/* Header */}
         <div className="text-center space-y-4 max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full glass-panel border border-rose-500/30 text-xs font-mono text-rose-300">
-            <Sparkles className="w-3.5 h-3.5 text-rose-400" />
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-rose-50 border border-rose-200 text-xs font-mono font-semibold text-rose-700 shadow-xs">
+            <Sliders className="w-3.5 h-3.5 text-rose-600" />
             <span>INTERACTIVE SKIN PASSPORT SIMULATOR</span>
           </div>
-          <h2 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight">
-            Test the <span className="text-gradient-rose">CIELAB ΔE Harmony Engine</span>
+          <h2 className="text-3xl sm:text-5xl font-extrabold text-neutral-950 tracking-tight">
+            Select a Diverse Profile. <br />
+            <span className="text-gradient-rose">Watch Verdicts Recalculate Live.</span>
           </h2>
-          <p className="text-slate-300 text-base sm:text-lg">
-            Select a skin passport profile below to see real-time color harmony scores and beauty recommendations compute dynamically.
+          <p className="text-neutral-600 text-base sm:text-lg">
+            Switch between tone archetypes to explore how YouCam tone analysis dynamically outputs color harmony swatches and clinical beauty targets.
           </p>
         </div>
 
-        {/* Profile Selector Tabs */}
+        {/* Profile Selector Pills */}
         <div className="flex flex-wrap justify-center gap-3">
           {PROFILES.map((profile) => (
             <button
               key={profile.id}
-              onClick={() => {
-                setSelected(profile);
-                setActiveGarmentIndex(0);
-              }}
-              className={`px-5 py-3 rounded-2xl text-xs sm:text-sm font-semibold transition-all duration-300 flex items-center gap-3 ${
-                selected.id === profile.id
-                  ? "glass-panel bg-rose-500/20 border-rose-500/50 text-white shadow-lg shadow-rose-500/20 scale-105"
-                  : "glass-panel text-slate-400 hover:text-white border-white/10 hover:border-white/20"
+              onClick={() => setSelectedProfile(profile)}
+              className={`px-6 py-3 rounded-full text-xs font-bold font-mono tracking-wide transition-all ${
+                selectedProfile.id === profile.id
+                  ? "bg-neutral-950 text-white shadow-lg shadow-neutral-950/20 scale-105"
+                  : "bg-white text-neutral-700 border border-neutral-300 hover:border-neutral-400 hover:bg-neutral-50 shadow-xs"
               }`}
             >
-              <span
-                className="w-3.5 h-3.5 rounded-full border border-white/20 shadow-sm"
-                style={{
-                  backgroundColor:
-                    profile.undertone === "Warm"
-                      ? "#f59e0b"
-                      : profile.undertone === "Cool"
-                      ? "#3b82f6"
-                      : "#a855f7",
-                }}
-              />
-              <span>{profile.name}</span>
+              {profile.name} ({profile.undertone})
             </button>
           ))}
         </div>
 
-        {/* Live Simulator Workspace Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Left Panel: Skin Passport Metrics */}
-          <div className="lg:col-span-5 glass-panel rounded-3xl p-7 border-white/15 space-y-6">
-            <div className="flex items-center justify-between border-b border-white/10 pb-4">
-              <div>
-                <span className="text-xs font-mono text-slate-400 uppercase">ACTIVE PROFILE</span>
-                <h3 className="text-xl font-bold text-white">{selected.name}</h3>
-              </div>
-              <span className="px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/30 text-xs font-mono text-rose-300">
-                {selected.undertone} Undertone
-              </span>
-            </div>
-
-            {/* Tone & CIELAB Specs */}
-            <div className="space-y-3">
-              <div className="text-xs font-mono text-slate-400 uppercase">CIELAB Coordinates (Tone Depth)</div>
-              <div className="grid grid-cols-3 gap-3 font-mono text-center text-xs">
-                <div className="p-3 rounded-xl bg-slate-900 border border-white/10">
-                  <div className="text-slate-400 text-[10px]">L* (Lightness)</div>
-                  <div className="text-base font-bold text-white">{selected.cielab.L}</div>
+        {/* Interactive Bento Grid */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={selectedProfile.id}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -16 }}
+            transition={{ duration: 0.35 }}
+            className="grid grid-cols-1 lg:grid-cols-12 gap-8"
+          >
+            {/* Left Card: Passport Metrics (4 cols) */}
+            <div className="lg:col-span-4 bg-white rounded-3xl p-7 border border-neutral-200/90 shadow-sm flex flex-col justify-between">
+              <div className="space-y-6">
+                <div className="flex items-center justify-between pb-4 border-b border-neutral-100">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-rose-500" />
+                    <span className="font-mono text-xs font-bold uppercase text-neutral-950">
+                      Skin Passport v2
+                    </span>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-mono font-bold">
+                    VALIDATED
+                  </span>
                 </div>
-                <div className="p-3 rounded-xl bg-slate-900 border border-white/10">
-                  <div className="text-slate-400 text-[10px]">a* (Red/Green)</div>
-                  <div className="text-base font-bold text-rose-400">+{selected.cielab.a}</div>
-                </div>
-                <div className="p-3 rounded-xl bg-slate-900 border border-white/10">
-                  <div className="text-slate-400 text-[10px]">b* (Yellow/Blue)</div>
-                  <div className="text-base font-bold text-amber-400">+{selected.cielab.b}</div>
-                </div>
-              </div>
-            </div>
 
-            {/* Target Skin Concern */}
-            <div className="p-4 rounded-2xl bg-purple-950/20 border border-purple-500/20 space-y-2">
-              <div className="flex justify-between items-center text-xs">
-                <span className="text-purple-300 font-medium">#1 Primary Concern Detected</span>
-                <span className="text-purple-400 font-mono font-bold">Severity {selected.concernScore}/100</span>
-              </div>
-              <div className="text-sm font-semibold text-white">{selected.primaryConcern}</div>
-              <div className="w-full h-1.5 rounded-full bg-slate-900 overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-purple-500 to-rose-500 rounded-full transition-all duration-500"
-                  style={{ width: `${selected.concernScore}%` }}
-                />
-              </div>
-            </div>
-
-            <div className="text-xs text-slate-400 flex items-center gap-2">
-              <Zap className="w-3.5 h-3.5 text-amber-400" />
-              <span>Session ID: anon_usr_77a94bc2 (SQLite Saved)</span>
-            </div>
-          </div>
-
-          {/* Right Panel: Interactive Color Harmony & Beauty Output */}
-          <div className="lg:col-span-7 space-y-6">
-            {/* Apparel Color Harmony Grid */}
-            <div className="glass-panel rounded-3xl p-7 border-white/15 space-y-5">
-              <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="text-lg font-bold text-white">Apparel Color Harmony Engine</h4>
-                  <p className="text-xs text-slate-400">Computed via ΔE distance matrix against skin undertone</p>
+                  <h3 className="text-2xl font-black text-neutral-950">
+                    {selectedProfile.name}
+                  </h3>
+                  <div className="text-sm font-semibold text-neutral-500 mt-1">
+                    {selectedProfile.toneDepth}
+                  </div>
                 </div>
-                <span className="text-xs font-mono text-cyan-300 bg-cyan-950/60 px-3 py-1 rounded-full border border-cyan-500/30">
-                  YouCam Cloth Ready
-                </span>
-              </div>
 
-              {/* Swatches */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {selected.palette.map((swatch, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setActiveGarmentIndex(idx)}
-                    className={`p-3.5 rounded-2xl border transition-all text-left space-y-2 relative overflow-hidden group ${
-                      activeGarmentIndex === idx
-                        ? "bg-slate-800/90 border-rose-500/60 shadow-md scale-105"
-                        : "bg-slate-900/60 border-white/10 hover:border-white/30"
-                    }`}
-                  >
+                {/* CIELAB coordinates chip */}
+                <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200 space-y-2">
+                  <div className="text-xs font-mono font-semibold text-neutral-500 uppercase">
+                    CIELAB Scientific Coordinates
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-center font-mono text-xs">
+                    <div className="p-2 rounded-xl bg-white border border-neutral-200">
+                      <div className="text-neutral-400 text-[10px]">L* (Light)</div>
+                      <div className="font-bold text-neutral-900">{selectedProfile.cielab.L}</div>
+                    </div>
+                    <div className="p-2 rounded-xl bg-white border border-neutral-200">
+                      <div className="text-neutral-400 text-[10px]">a* (Red/Grn)</div>
+                      <div className="font-bold text-rose-600">+{selectedProfile.cielab.a}</div>
+                    </div>
+                    <div className="p-2 rounded-xl bg-white border border-neutral-200">
+                      <div className="text-neutral-400 text-[10px]">b* (Yel/Blu)</div>
+                      <div className="font-bold text-amber-600">+{selectedProfile.cielab.b}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Primary Concern Score */}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs font-mono">
+                    <span className="text-neutral-500 font-semibold">Primary Target Concern</span>
+                    <span className="text-rose-600 font-bold">{selectedProfile.concernScore}/100</span>
+                  </div>
+                  <div className="text-sm font-bold text-neutral-900">
+                    {selectedProfile.primaryConcern}
+                  </div>
+                  <div className="w-full h-2 rounded-full bg-neutral-100 overflow-hidden">
                     <div
-                      className="w-full h-10 rounded-xl shadow-inner border border-white/20 transition-transform group-hover:scale-105"
-                      style={{ backgroundColor: swatch.hex }}
+                      className="h-full bg-gradient-to-r from-rose-500 to-purple-600 rounded-full transition-all duration-700"
+                      style={{ width: `${selectedProfile.concernScore}%` }}
                     />
-                    <div className="text-xs font-medium text-white truncate">{swatch.name}</div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-[11px] font-mono font-bold text-emerald-400">
-                        {swatch.harmonyScore}% Harmony
-                      </span>
-                      {activeGarmentIndex === idx && (
-                        <Check className="w-3.5 h-3.5 text-rose-400" />
-                      )}
-                    </div>
-                  </button>
-                ))}
+                  </div>
+                </div>
               </div>
 
-              {/* Selected Swatch Verdict Highlight */}
-              <div className="p-4 rounded-2xl bg-slate-900/80 border border-white/10 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-10 h-10 rounded-xl border border-white/20 shadow-md"
-                    style={{ backgroundColor: selected.palette[activeGarmentIndex].hex }}
-                  />
-                  <div>
-                    <div className="text-sm font-semibold text-white">
-                      Selected: {selected.palette[activeGarmentIndex].name}
-                    </div>
-                    <div className="text-xs text-slate-400">
-                      ΔE Distance: 1.18 (Optimal Visual Contrast)
-                    </div>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-2xl font-mono font-black text-emerald-400">
-                    {selected.palette[activeGarmentIndex].harmonyScore}%
-                  </div>
-                  <span className="text-[10px] uppercase font-bold text-slate-300">Aura Score</span>
-                </div>
+              <div className="pt-6 border-t border-neutral-100 flex items-center justify-between text-xs font-mono text-neutral-500">
+                <span>Undertone Class:</span>
+                <span className="font-bold text-neutral-950 uppercase">{selectedProfile.undertone}</span>
               </div>
             </div>
 
-            {/* Beauty Product Verdict Card */}
-            <div className="glass-panel rounded-3xl p-7 border-rose-500/30 bg-gradient-to-br from-rose-950/30 via-slate-900/80 to-purple-950/30 space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-rose-400" />
-                  <h4 className="text-base font-bold text-white">Matched Beauty Formula</h4>
+            {/* Middle & Right: Palette and Beauty Matches (8 cols) */}
+            <div className="lg:col-span-8 flex flex-col gap-8">
+              {/* Apparel Color Harmony Bento Card */}
+              <div className="bg-white rounded-3xl p-7 border border-neutral-200/90 shadow-sm space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <div className="text-xs font-mono font-bold text-neutral-400 uppercase tracking-wider">
+                      Apparel Color Science
+                    </div>
+                    <h4 className="text-xl font-bold text-neutral-950">
+                      Harmonized Apparel Pigment Swatches
+                    </h4>
+                  </div>
+                  <span className="text-xs font-mono px-3 py-1 rounded-full bg-purple-50 text-purple-700 border border-purple-200 font-semibold">
+                    ΔE &lt; 2.0 (Flattering Match)
+                  </span>
                 </div>
-                <span className="text-xs font-mono text-emerald-400 bg-emerald-950/60 px-3 py-1 rounded-full border border-emerald-500/30">
-                  {selected.beautyMatch.matchScore}% Match Confidence
-                </span>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  {selectedProfile.palette.map((swatch, idx) => (
+                    <div
+                      key={idx}
+                      className="rounded-2xl p-3 border border-neutral-200 bg-neutral-50 hover:bg-white hover:shadow-md transition-all space-y-3"
+                    >
+                      <div
+                        className="w-full aspect-video rounded-xl shadow-inner border border-black/10"
+                        style={{ backgroundColor: swatch.hex }}
+                      />
+                      <div className="space-y-1">
+                        <div className="text-xs font-bold text-neutral-900 truncate">
+                          {swatch.name}
+                        </div>
+                        <div className="flex justify-between items-center text-[10px] font-mono">
+                          <span className="text-neutral-500">{swatch.hex}</span>
+                          <span className="font-bold text-emerald-600">
+                            {swatch.harmonyScore}%
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
 
-              <div className="space-y-1">
-                <div className="text-lg font-semibold text-white">{selected.beautyMatch.title}</div>
-                <div className="text-xs font-mono text-rose-300">Shade: {selected.beautyMatch.shade}</div>
+              {/* Beauty Formulation Match Bento Card */}
+              <div className="bg-white rounded-3xl p-7 border border-neutral-200/90 shadow-sm space-y-4">
+                <div className="text-xs font-mono font-bold text-neutral-400 uppercase tracking-wider">
+                  Beauty & Skincare Match
+                </div>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl bg-neutral-50 border border-neutral-200">
+                  <div className="space-y-1 max-w-lg">
+                    <div className="text-base font-bold text-neutral-950">
+                      {selectedProfile.beautyMatch.title}
+                    </div>
+                    <div className="text-xs font-semibold text-rose-600">
+                      Optimal Shade: {selectedProfile.beautyMatch.shade}
+                    </div>
+                    <p className="text-xs text-neutral-600 font-normal leading-relaxed">
+                      {selectedProfile.beautyMatch.note}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <div className="text-3xl font-black font-mono text-purple-600">
+                      {selectedProfile.beautyMatch.matchScore}%
+                    </div>
+                    <div className="text-[10px] font-bold text-purple-700 uppercase tracking-wider">
+                      TARGET FORMULA
+                    </div>
+                  </div>
+                </div>
               </div>
-
-              <p className="text-xs text-slate-300 leading-relaxed font-light">
-                {selected.beautyMatch.note}
-              </p>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </AnimatePresence>
       </div>
     </section>
   );

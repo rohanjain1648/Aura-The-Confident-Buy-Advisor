@@ -15,8 +15,8 @@ import Footer from "@/components/Footer";
 export default function Home() {
   return (
     <LenisProvider>
-      <div className="relative min-h-screen bg-[#05050a] text-slate-100 selection:bg-rose-500 selection:text-white overflow-x-hidden">
-        {/* Dynamic ambient canvas background */}
+      <div className="relative min-h-screen bg-[#fafafc] text-neutral-900 selection:bg-rose-500 selection:text-white overflow-x-hidden">
+        {/* Dynamic pearlescent ambient canvas background */}
         <BackgroundCanvas />
 
         {/* Floating Glass Navigation */}
@@ -33,7 +33,7 @@ export default function Home() {
           <FaqSection />
         </main>
 
-        {/* Luxury Glass Footer */}
+        {/* Luxury Footer */}
         <Footer />
       </div>
     </LenisProvider>

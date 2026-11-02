@@ -5,11 +5,13 @@ import "./globals.css";
 const inter = Inter({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+  display: "swap",
 });
 
 const plusJakarta = Plus_Jakarta_Sans({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -26,9 +28,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${plusJakarta.variable} h-full antialiased dark`}
+      className={`${inter.variable} ${plusJakarta.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-[#05050a] text-slate-100 selection:bg-rose-500 selection:text-white overflow-x-hidden font-sans">
+      <body className="min-h-full flex flex-col bg-[#fafafc] text-neutral-900 selection:bg-rose-500 selection:text-white overflow-x-hidden font-sans">
         {children}
       </body>
     </html>

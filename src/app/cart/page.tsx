@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+import { ArrowLeft, ShoppingBag, Sparkles, Check, ArrowRight } from 'lucide-react';
 
 export default function CartPage() {
   const [items, setItems] = useState<{ id: string; productId: string }[]>([]);
@@ -17,21 +18,118 @@ export default function CartPage() {
       .catch(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="p-4">Loading...</div>;
-
   return (
-    <div className="min-h-screen bg-white p-4">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8">Cart</h1>
-        {items.length === 0 ? (
-          <p>Your cart is empty.</p>
+    <div className="min-h-screen bg-[#fafafc] text-neutral-900 selection:bg-rose-500 selection:text-white flex flex-col">
+      {/* Header */}
+      <header className="p-5 sm:px-10 flex items-center justify-between border-b border-neutral-200/80 bg-white/80 backdrop-blur-md sticky top-0 z-30">
+        <Link
+          href="/shop"
+          className="inline-flex items-center gap-2 text-sm font-bold text-neutral-600 hover:text-neutral-950 transition"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Back to Shop</span>
+        </Link>
+
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-rose-500 to-purple-600 p-[1.5px] shadow-sm">
+            <div className="w-full h-full bg-white rounded-full flex items-center justify-center">
+              <Sparkles className="w-3.5 h-3.5 text-rose-500" />
+            </div>
+          </div>
+          <span className="font-extrabold text-base tracking-tight text-neutral-950">
+            AURA BAG
+          </span>
+        </div>
+
+        <Link
+          href="/dashboard"
+          className="text-xs font-bold text-neutral-500 hover:text-neutral-950 transition"
+        >
+          Dashboard &rarr;
+        </Link>
+      </header>
+
+      {/* Main Container */}
+      <main className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-8 py-12 space-y-8">
+        <div className="space-y-2">
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-neutral-950 tracking-tight">
+            Shopping Bag
+          </h1>
+          <p className="text-sm text-neutral-600">
+            Items pre-validated with your Skin Passport confidence score.
+          </p>
+        </div>
+
+        {loading ? (
+          <div className="py-16 text-center text-neutral-500 font-mono text-sm">
+            Loading your cart...
+          </div>
+        ) : items.length === 0 ? (
+          <div className="bg-white rounded-3xl p-10 border border-neutral-200/90 shadow-sm text-center space-y-5">
+            <div className="w-16 h-16 rounded-2xl bg-neutral-100 flex items-center justify-center text-neutral-400 mx-auto">
+              <ShoppingBag className="w-8 h-8" />
+            </div>
+            <div className="space-y-1">
+              <h2 className="text-xl font-bold text-neutral-950">Your Bag is Empty</h2>
+              <p className="text-xs text-neutral-500 max-w-sm mx-auto">
+                Explore the personalized storefront to find clothing and cosmetics harmonized with your undertone.
+              </p>
+            </div>
+            <Link
+              href="/shop"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-neutral-950 text-white font-bold text-xs hover:bg-neutral-800 transition shadow-xs"
+            >
+              <span>Browse Recommended Products</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
         ) : (
-          <div>
-            <p>{items.length} items in cart</p>
-            <Button className="mt-4">Checkout</Button>
+          <div className="bg-white rounded-3xl p-8 border border-neutral-200/90 shadow-sm space-y-6">
+            <div className="flex items-center justify-between pb-4 border-b border-neutral-100 text-xs font-mono font-bold text-neutral-500 uppercase">
+              <span>{items.length} Pre-Screened Items</span>
+              <span className="text-emerald-600">Passport Matched</span>
+            </div>
+
+            <div className="space-y-3">
+              {items.map((item, idx) => (
+                <div
+                  key={idx}
+                  className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200 flex items-center justify-between"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 font-mono font-bold text-xs flex items-center justify-center border border-purple-200">
+                      #{idx + 1}
+                    </div>
+                    <div>
+                      <div className="text-sm font-bold text-neutral-950">
+                        Product Item #{item.productId.slice(0, 8)}
+                      </div>
+                      <div className="text-xs text-neutral-500 font-mono">
+                        Session Verified
+                      </div>
+                    </div>
+                  </div>
+                  <span className="text-xs font-mono font-bold text-emerald-600 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200">
+                    High Confidence
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <div className="pt-6 border-t border-neutral-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="text-xs text-neutral-500">
+                All items eligible for YouCam Try-On reassurance before purchase.
+              </div>
+              <button
+                onClick={() => alert('Demo checkout simulated successfully!')}
+                className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-neutral-950 text-white font-extrabold text-sm hover:bg-neutral-800 transition shadow-xs"
+              >
+                Proceed to Checkout
+              </button>
+            </div>
           </div>
         )}
-      </div>
+      </main>
     </div>
   );
 }

@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { ShoppingBag, Sparkles, Check, Heart, ArrowUpRight, Filter } from "lucide-react";
+import { ShoppingBag, Sparkles, Check, ArrowUpRight } from "lucide-react";
 import Magnetic from "./Magnetic";
+import Link from "next/link";
 
 interface Product {
   id: string;
@@ -13,8 +14,8 @@ interface Product {
   matchType: string;
   undertoneHarmony: string;
   concernTarget?: string;
-  badgeColor: string;
-  imageBg: string;
+  badgePill: string;
+  gradientBg: string;
 }
 
 const PRODUCTS: Product[] = [
@@ -26,8 +27,8 @@ const PRODUCTS: Product[] = [
     matchScore: 98,
     matchType: "Color Harmony + VTO Fit",
     undertoneHarmony: "Warm Autumn Gold (ΔE 1.12)",
-    badgeColor: "text-emerald-400 bg-emerald-950/70 border-emerald-500/40",
-    imageBg: "from-amber-950/60 to-rose-950/40",
+    badgePill: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    gradientBg: "from-amber-100/70 via-rose-50 to-orange-100/60",
   },
   {
     id: "p2",
@@ -38,8 +39,8 @@ const PRODUCTS: Product[] = [
     matchType: "Shade Match + Concern Target",
     undertoneHarmony: "Warm Oat #24W",
     concernTarget: "Redness & Hydration",
-    badgeColor: "text-rose-400 bg-rose-950/70 border-rose-500/40",
-    imageBg: "from-rose-950/60 to-purple-950/40",
+    badgePill: "bg-rose-50 text-rose-700 border-rose-200",
+    gradientBg: "from-rose-100/70 via-pink-50 to-purple-100/60",
   },
   {
     id: "p3",
@@ -49,8 +50,8 @@ const PRODUCTS: Product[] = [
     matchScore: 95,
     matchType: "Color Harmony + VTO Fit",
     undertoneHarmony: "High Visual Contrast (ΔE 1.40)",
-    badgeColor: "text-cyan-400 bg-cyan-950/70 border-cyan-500/40",
-    imageBg: "from-blue-950/60 to-indigo-950/40",
+    badgePill: "bg-sky-50 text-sky-700 border-sky-200",
+    gradientBg: "from-sky-100/70 via-blue-50 to-indigo-100/60",
   },
   {
     id: "p4",
@@ -61,8 +62,8 @@ const PRODUCTS: Product[] = [
     matchType: "Primary Concern Solution",
     undertoneHarmony: "Universal Neutral",
     concernTarget: "Oiliness & Pores (#1 Score)",
-    badgeColor: "text-purple-400 bg-purple-950/70 border-purple-500/40",
-    imageBg: "from-purple-950/60 to-slate-900",
+    badgePill: "bg-purple-50 text-purple-700 border-purple-200",
+    gradientBg: "from-purple-100/70 via-violet-50 to-slate-100/60",
   },
 ];
 
@@ -85,47 +86,47 @@ export default function ProductGridSection() {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="space-y-4 max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full glass-panel border border-amber-500/30 text-xs font-mono text-amber-300">
-              <ShoppingBag className="w-3.5 h-3.5 text-amber-400" />
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-50 border border-amber-200 text-xs font-mono font-semibold text-amber-700 shadow-xs">
+              <ShoppingBag className="w-3.5 h-3.5 text-amber-600" />
               <span>PASSPORT-AWARE STOREFRONT</span>
             </div>
-            <h2 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight">
+            <h2 className="text-3xl sm:text-5xl font-extrabold text-neutral-950 tracking-tight">
               Personalized Badges on <br />
               <span className="text-gradient-gold">Every Product Card</span>
             </h2>
-            <p className="text-slate-300 text-base">
+            <p className="text-neutral-600 text-base">
               Once a Skin Passport exists, every product card computes an instant match badge without making repeated external API calls.
             </p>
           </div>
 
           {/* Filter Pills */}
-          <div className="flex items-center gap-2 rounded-2xl glass-panel p-1 border-white/10">
+          <div className="flex items-center gap-2 p-1.5 rounded-full bg-neutral-100 border border-neutral-200 self-start md:self-auto">
             <button
               onClick={() => setFilter("all")}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold transition ${
+              className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${
                 filter === "all"
-                  ? "bg-purple-600 text-white shadow"
-                  : "text-slate-400 hover:text-white"
+                  ? "bg-white text-neutral-950 shadow-xs"
+                  : "text-neutral-600 hover:text-neutral-950"
               }`}
             >
               All Items
             </button>
             <button
               onClick={() => setFilter("apparel")}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold transition ${
+              className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${
                 filter === "apparel"
-                  ? "bg-purple-600 text-white shadow"
-                  : "text-slate-400 hover:text-white"
+                  ? "bg-white text-neutral-950 shadow-xs"
+                  : "text-neutral-600 hover:text-neutral-950"
               }`}
             >
               Apparel
             </button>
             <button
               onClick={() => setFilter("beauty")}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold transition ${
+              className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${
                 filter === "beauty"
-                  ? "bg-purple-600 text-white shadow"
-                  : "text-slate-400 hover:text-white"
+                  ? "bg-white text-neutral-950 shadow-xs"
+                  : "text-neutral-600 hover:text-neutral-950"
               }`}
             >
               Beauty
@@ -133,88 +134,94 @@ export default function ProductGridSection() {
           </div>
         </div>
 
-        {/* Product Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {filteredProducts.map((prod) => {
-            const isAdded = addedIds.includes(prod.id);
+        {/* Product Cards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {filteredProducts.map((p) => {
+            const isAdded = addedIds.includes(p.id);
             return (
               <div
-                key={prod.id}
-                className="glass-panel-interactive rounded-3xl p-5 border-white/10 flex flex-col justify-between group space-y-4"
+                key={p.id}
+                className="bg-white rounded-3xl p-5 border border-neutral-200/90 shadow-sm hover:shadow-xl hover:border-purple-200 transition-all flex flex-col justify-between group"
               >
-                {/* Visual Banner */}
-                <div
-                  className={`relative aspect-[4/3] rounded-2xl bg-gradient-to-br ${prod.imageBg} border border-white/10 p-4 flex flex-col justify-between overflow-hidden`}
-                >
-                  {/* Aura Score Badge Header */}
-                  <div className="flex items-center justify-between z-10">
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-mono font-bold border backdrop-blur-md ${prod.badgeColor}`}
-                    >
-                      {prod.matchScore}% Match
-                    </span>
-                    <button className="w-8 h-8 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-slate-400 hover:text-rose-400 transition">
-                      <Heart className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  {/* Category Pill Footer */}
-                  <div className="z-10 flex justify-between items-center text-[10px] font-mono text-slate-300">
-                    <span className="uppercase tracking-wider px-2 py-0.5 rounded bg-black/60 border border-white/10">
-                      {prod.category}
-                    </span>
-                    <Sparkles className="w-4 h-4 text-amber-400" />
-                  </div>
-                </div>
-
-                {/* Details */}
-                <div className="space-y-2">
-                  <div className="flex justify-between items-start">
-                    <h3 className="text-base font-bold text-white leading-snug group-hover:text-rose-300 transition-colors">
-                      {prod.title}
-                    </h3>
-                    <span className="text-sm font-mono font-bold text-slate-200">
-                      {prod.price}
-                    </span>
-                  </div>
-
-                  <div className="text-xs text-slate-400 space-y-1">
-                    <div className="flex items-center gap-1 text-slate-300 font-medium">
-                      <span>Verdict:</span>
-                      <span className="text-emerald-400">{prod.undertoneHarmony}</span>
+                <div>
+                  {/* Visual Preview Box */}
+                  <div
+                    className={`relative aspect-square rounded-2xl bg-gradient-to-br ${p.gradientBg} border border-neutral-200/70 p-4 flex flex-col justify-between overflow-hidden shadow-inner`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-mono font-bold border ${p.badgePill}`}>
+                        {p.matchScore}% Match
+                      </span>
+                      <span className="text-xs font-mono font-bold uppercase text-neutral-500">
+                        {p.category}
+                      </span>
                     </div>
-                    {prod.concernTarget && (
-                      <div className="text-[11px] text-purple-300">
-                        Targets: {prod.concernTarget}
+
+                    <div className="space-y-1">
+                      <div className="w-12 h-12 rounded-xl bg-white/80 backdrop-blur-md border border-white flex items-center justify-center shadow-xs">
+                        <Sparkles className="w-6 h-6 text-purple-600" />
                       </div>
-                    )}
+                    </div>
+                  </div>
+
+                  {/* Product Details */}
+                  <div className="mt-5 space-y-2">
+                    <div className="flex justify-between items-baseline gap-2">
+                      <h4 className="text-base font-bold text-neutral-950 group-hover:text-purple-600 transition-colors">
+                        {p.title}
+                      </h4>
+                    </div>
+                    <div className="text-sm font-extrabold text-neutral-900">{p.price}</div>
+
+                    <div className="pt-3 border-t border-neutral-100 space-y-1.5 text-xs">
+                      <div className="text-neutral-500 font-medium">
+                        Harmony: <span className="font-semibold text-neutral-800">{p.undertoneHarmony}</span>
+                      </div>
+                      {p.concernTarget && (
+                        <div className="text-neutral-500 font-medium">
+                          Target: <span className="font-semibold text-rose-600">{p.concernTarget}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
-                {/* Action CTA */}
-                <button
-                  onClick={() => toggleAddToCart(prod.id)}
-                  className={`w-full py-2.5 rounded-xl font-medium text-xs flex items-center justify-center gap-2 transition-all ${
-                    isAdded
-                      ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/30"
-                      : "bg-white/10 hover:bg-white/20 text-white border border-white/10"
-                  }`}
-                >
-                  {isAdded ? (
-                    <>
-                      <Check className="w-4 h-4" />
-                      <span>Added with Confidence</span>
-                    </>
-                  ) : (
-                    <>
-                      <ShoppingBag className="w-4 h-4 text-rose-400" />
-                      <span>Confident Add To Cart</span>
-                    </>
-                  )}
-                </button>
+                {/* Card Action */}
+                <div className="mt-5 pt-4 border-t border-neutral-100 flex items-center gap-2">
+                  <button
+                    onClick={() => toggleAddToCart(p.id)}
+                    className={`w-full py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                      isAdded
+                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                        : "bg-neutral-950 text-white hover:bg-neutral-800 shadow-xs"
+                    }`}
+                  >
+                    {isAdded ? (
+                      <>
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Saved</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Add to Bag</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             );
           })}
+        </div>
+
+        {/* Bottom CTA to shop page */}
+        <div className="text-center pt-4">
+          <Link
+            href="/shop"
+            className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-white border border-neutral-300 text-neutral-900 font-bold text-sm shadow-xs hover:bg-neutral-50 hover:border-neutral-400 transition"
+          >
+            <span>Explore Full Storefront Catalog</span>
+            <ArrowUpRight className="w-4 h-4" />
+          </Link>
         </div>
       </div>
     </section>

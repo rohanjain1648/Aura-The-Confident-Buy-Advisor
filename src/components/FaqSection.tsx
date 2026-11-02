@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, HelpCircle, Sparkles } from "lucide-react";
+import { ChevronDown, HelpCircle } from "lucide-react";
 
 interface FaqItem {
   q: string;
@@ -43,14 +43,14 @@ export default function FaqSection() {
       <div className="max-w-4xl mx-auto space-y-12">
         {/* Header */}
         <div className="text-center space-y-4">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full glass-panel border border-rose-500/30 text-xs font-mono text-rose-300">
-            <HelpCircle className="w-3.5 h-3.5 text-rose-400" />
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-rose-50 border border-rose-200 text-xs font-mono font-semibold text-rose-700 shadow-xs">
+            <HelpCircle className="w-3.5 h-3.5 text-rose-600" />
             <span>FREQUENTLY ASKED QUESTIONS</span>
           </div>
-          <h2 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight">
+          <h2 className="text-3xl sm:text-5xl font-extrabold text-neutral-950 tracking-tight">
             Everything You Need to Know
           </h2>
-          <p className="text-slate-300 text-base">
+          <p className="text-neutral-600 text-base">
             Technical architecture, YouCam integration details, and privacy guarantees.
           </p>
         </div>
@@ -62,16 +62,16 @@ export default function FaqSection() {
             return (
               <div
                 key={idx}
-                className="glass-panel rounded-2xl border-white/10 overflow-hidden transition-all duration-300"
+                className="bg-white rounded-2xl border border-neutral-200/90 shadow-xs overflow-hidden transition-all duration-300"
               >
                 <button
                   onClick={() => toggle(idx)}
-                  className="w-full p-6 text-left flex items-center justify-between gap-4 font-semibold text-white text-base hover:text-rose-300 transition-colors"
+                  className="w-full p-6 text-left flex items-center justify-between gap-4 font-bold text-neutral-900 hover:text-purple-700 transition"
                 >
-                  <span>{faq.q}</span>
+                  <span className="text-base sm:text-lg">{faq.q}</span>
                   <div
-                    className={`w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center transition-transform duration-300 ${
-                      isOpen ? "rotate-180 bg-rose-500/20 text-rose-400" : "text-slate-400"
+                    className={`p-2 rounded-full bg-neutral-100 text-neutral-600 transition-transform duration-300 shrink-0 ${
+                      isOpen ? "rotate-180 bg-purple-50 text-purple-700" : ""
                     }`}
                   >
                     <ChevronDown className="w-4 h-4" />
@@ -79,8 +79,8 @@ export default function FaqSection() {
                 </button>
 
                 {isOpen && (
-                  <div className="px-6 pb-6 pt-0 text-sm text-slate-300 leading-relaxed font-light border-t border-white/5">
-                    <p className="pt-4">{faq.a}</p>
+                  <div className="px-6 pb-6 text-neutral-600 text-sm leading-relaxed border-t border-neutral-100 pt-4">
+                    {faq.a}
                   </div>
                 )}
               </div>
