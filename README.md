@@ -65,11 +65,14 @@ Both produce a 0–100 score and a tier: `buy` (70+), `maybe` (45–69), or `ski
 1. **Capture** (`/onboarding`) — take a selfie with the on-screen face guide, or upload a
    photo. Photos under 480 px on the short side are rejected in the browser, before any
    YouCam unit is spent.
-2. **Analyze** — the face crop is uploaded and sent to `skin-analysis` and
-   `skin-tone-analysis` in parallel, while the wider frame is stored for try-on. Results are
-   normalized into a `SkinPassport` and saved against the anonymous session. Photo problems,
-   such as a face that's too small or a dark image, come back as guidance the shopper can
-   act on.
+2. **Analyze** — the face crop is uploaded and sent to `skin-analysis`, then
+   `skin-tone-analysis`, so a rejected photo spends no units, while the wider frame is stored for try-on. Results are
+   normalized into a `SkinPassport` and saved against the anonymous session. YouCam needs the
+   face to span over 60% of the image width, so the browser finds the face with MediaPipe's
+   BlazeFace detector (Apache-2.0, served from `public/mediapipe`) and crops to it. If YouCam
+   still says the face is too small, Aura retries tighter, which costs no units. If no face is
+   found, it falls back to centred crops. Other photo problems, such as a dark image, come back
+   as guidance the shopper can act on.
 3. **Browse** (`/shop`) — every product card shows a personalized verdict from the stored
    Passport, best matches first. This spends no API units.
 4. **Decide** (`/shop/[id]`) — see the verdict and generate a real try-on for apparel.
@@ -420,7 +423,7 @@ pnpm playwright test
 pnpm tsc --noEmit
 ```
 
-Current results: **88 Vitest tests** across 19 files pass. The 13 Playwright tests were written before the latest UI redesign and need updating for its new labels.
+Current results: **94 Vitest tests** across 20 files pass. The 13 Playwright tests were written before the latest UI redesign and need updating for its new labels.
 
 - **Unit** — the color-harmony engine, the Skin Passport normalizer, and the verdict scorer
   are pure functions tested with plain input/output assertions.

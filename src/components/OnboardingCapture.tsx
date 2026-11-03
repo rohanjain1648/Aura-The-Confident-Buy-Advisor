@@ -3,20 +3,17 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { motion } from 'framer-motion';
 import { Camera, Upload, AlertCircle, RefreshCw, ArrowRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { findFace, loadFaceDetector, skinCrops, type Rect } from '@/lib/face-crop';
 
-// YouCam skin analysis needs the face to span over 60% of the image width and a
-// short side of at least 480px. Try-on needs the wider shot, so a capture sends both.
-const CROP_RATIO = 0.62;
+// YouCam skin analysis needs a short side of at least 480px, so small crops are
+// upscaled. Try-on needs the wider shot, so a capture sends both.
+const GUIDE_RATIO = 0.5;
+const FACE_TOO_SMALL = 'error_src_face_too_small';
 const MIN_SKIN_SIDE = 480;
 const MAX_UPLOAD_SIDE = 2048;
 const TOO_SMALL = `This photo is too small. Use one at least ${MIN_SKIN_SIDE} pixels on its shortest side.`;
 
 type Passport = { undertone: string; topConcern: string };
-
-function skinCropSide(width: number, height: number) {
-  const short = Math.min(width, height);
-  return Math.min(short, Math.max(MIN_SKIN_SIDE, Math.round(short * CROP_RATIO)));
-}
 
 function toJpeg(
   source: CanvasImageSource,
@@ -32,6 +29,68 @@ function toJpeg(
   });
 }
 
+function cropToJpeg(source: CanvasImageSource, crop: Rect): Promise<Blob> {
+  const short = Math.min(crop.width, crop.height);
+  const long = Math.max(crop.width, crop.height);
+  const scale = Math.max(MIN_SKIN_SIDE / short, Math.min(1, MAX_UPLOAD_SIDE / long));
+  return toJpeg(
+    source,
+    crop.x, crop.y, crop.width, crop.height,
+    Math.round(crop.width * scale), Math.round(crop.height * scale),
+  );
+}
+
+class AnalysisError extends Error {
+  constructor(message: string, readonly code?: string) {
+    super(message);
+  }
+}
+
+async function requestAnalysis(skinPhoto: Blob, personPhoto: Blob): Promise<Passport> {
+  const formData = new FormData();
+  formData.append('file', skinPhoto, 'selfie.jpg');
+  formData.append('person', personPhoto, 'person.jpg');
+
+  const response = await fetch('/api/analyze', { method: 'POST', body: formData });
+  if (!response.ok) {
+    const failure = await response.json().catch(() => null);
+    throw new AnalysisError(failure?.error ?? `Analysis failed (${response.status}). Please try again.`);
+  }
+  if (!response.body) throw new AnalysisError('No response body');
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  // Stream SSE responses
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const events = buffer.split('\n\n');
+    buffer = events.pop() ?? '';
+
+    for (const event of events) {
+      const match = event.match(/data:\s*(.+)/);
+      if (!match) continue;
+      let data;
+      try {
+        data = JSON.parse(match[1]);
+      } catch {
+        continue; // ignore a malformed event
+      }
+      // The server explains rejected photos here, so the shopper must see this message.
+      if (data.status === 'error') {
+        throw new AnalysisError(data.message ?? 'Analysis failed. Please try again.', data.code);
+      }
+      if (data.status === 'complete' && data.passport) return data.passport;
+    }
+  }
+
+  throw new AnalysisError('Analysis incomplete. Please try again.');
+}
+
 export default function OnboardingCapture() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -39,7 +98,7 @@ export default function OnboardingCapture() {
   const [status, setStatus] = useState<'idle' | 'camera-requested' | 'previewing' | 'analyzing' | 'complete'>('idle');
   const [error, setError] = useState<string | null>(null);
   const [passport, setPassport] = useState<Passport | null>(null);
-  const [guide, setGuide] = useState({ landscape: true, ratio: CROP_RATIO });
+  const [guide, setGuide] = useState({ landscape: true });
   const [analysisStep, setAnalysisStep] = useState(0);
 
   const stopCamera = () => {
@@ -48,6 +107,11 @@ export default function OnboardingCapture() {
   };
 
   useEffect(() => stopCamera, []);
+
+  // Loaded early so capturing doesn't wait for it. Without it, centred crops are used.
+  useEffect(() => {
+    loadFaceDetector().catch(() => {});
+  }, []);
 
   // Preflight check: verify camera permissions
   const requestCamera = async () => {
@@ -72,10 +136,15 @@ export default function OnboardingCapture() {
     const video = videoRef.current;
     if (!video?.videoWidth) return;
     const { videoWidth: w, videoHeight: h } = video;
-    setGuide({ landscape: w >= h, ratio: skinCropSide(w, h) / Math.min(w, h) });
+    setGuide({ landscape: w >= h });
   };
 
-  const analyze = async (skinPhoto: Blob, personPhoto: Blob) => {
+  // Tries each crop in turn while YouCam says the face is too small. Rejections cost no units.
+  const analyze = async (
+    source: HTMLCanvasElement | ImageBitmap,
+    width: number, height: number,
+    personPhoto: Blob,
+  ) => {
     setStatus('analyzing');
     setError(null);
     setAnalysisStep(1);
@@ -84,93 +153,58 @@ export default function OnboardingCapture() {
       setAnalysisStep((prev) => (prev < 3 ? prev + 1 : prev));
     }, 1200);
 
-    const formData = new FormData();
-    formData.append('file', skinPhoto, 'selfie.jpg');
-    formData.append('person', personPhoto, 'person.jpg');
-
     try {
-      const response = await fetch('/api/analyze', { method: 'POST', body: formData });
-      if (!response.ok) {
-        const failure = await response.json().catch(() => null);
-        throw new Error(failure?.error ?? `Analysis failed (${response.status}). Please try again.`);
-      }
-      if (!response.body) throw new Error('No response body');
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let finished = false;
-
-      // Stream SSE responses
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const events = buffer.split('\n\n');
-        buffer = events.pop() ?? '';
-
-        for (const event of events) {
-          if (!event.trim()) continue;
-          const match = event.match(/data:\s*(.+)/);
-          if (match) {
-            try {
-              const data = JSON.parse(match[1]);
-              if (data.status === 'complete' && data.passport) {
-                setPassport(data.passport);
-                setStatus('complete');
-                finished = true;
-                clearInterval(stepTimer);
-                break;
-              }
-            } catch {
-              // ignore parse errors
-            }
-          }
+      const crops = skinCrops(width, height, await findFace(source));
+      for (const [i, crop] of crops.entries()) {
+        try {
+          setPassport(await requestAnalysis(await cropToJpeg(source, crop), personPhoto));
+          setStatus('complete');
+          return;
+        } catch (err) {
+          const hasTighterCrop = i < crops.length - 1;
+          if (!(err instanceof AnalysisError && err.code === FACE_TOO_SMALL && hasTighterCrop)) throw err;
         }
       }
-
-      clearInterval(stepTimer);
-      if (!finished) {
-        throw new Error('Analysis incomplete. Please try again.');
-      }
     } catch (err) {
-      clearInterval(stepTimer);
       setError(err instanceof Error ? err.message : String(err));
       setStatus('idle');
+    } finally {
+      clearInterval(stepTimer);
     }
   };
 
   const captureSelfie = async () => {
     const video = videoRef.current;
-    if (!video) return;
+    if (!video?.videoWidth) return;
     const { videoWidth: w, videoHeight: h } = video;
-    const side = skinCropSide(w, h);
-    const sx = Math.round((w - side) / 2);
-    const sy = Math.round((h - side) / 2);
-
-    const skinPhoto = await toJpeg(video, sx, sy, side, side, side, side);
-    const personPhoto = await toJpeg(video, 0, 0, w, h, w, h);
+    if (Math.min(w, h) < MIN_SKIN_SIDE) {
+      setError(TOO_SMALL);
+      return;
+    }
+    // Keep the frame, because the video stops and unmounts before the crops are made.
+    const frame = document.createElement('canvas');
+    frame.width = w;
+    frame.height = h;
+    frame.getContext('2d')?.drawImage(video, 0, 0, w, h);
     stopCamera();
-    await analyze(skinPhoto, personPhoto);
+    await analyze(frame, w, h, await toJpeg(frame, 0, 0, w, h, w, h));
   };
 
   const onUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = ''; // lets the same file be chosen again after an error
     if (!file) return;
 
     setError(null);
     try {
       const bitmap = await createImageBitmap(file);
-      if (Math.min(bitmap.width, bitmap.height) < MIN_SKIN_SIDE) {
+      const { width: w, height: h } = bitmap;
+      if (Math.min(w, h) < MIN_SKIN_SIDE) {
         throw new Error(TOO_SMALL);
       }
-      const scale = Math.min(1, MAX_UPLOAD_SIDE / Math.max(bitmap.width, bitmap.height));
-      const photo = await toJpeg(
-        bitmap, 0, 0, bitmap.width, bitmap.height,
-        Math.round(bitmap.width * scale), Math.round(bitmap.height * scale),
-      );
-      await analyze(photo, photo);
+      const scale = Math.min(1, MAX_UPLOAD_SIDE / Math.max(w, h));
+      const photo = await toJpeg(bitmap, 0, 0, w, h, Math.round(w * scale), Math.round(h * scale));
+      await analyze(bitmap, w, h, photo);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
       setStatus('idle');
@@ -267,7 +301,7 @@ export default function OnboardingCapture() {
                       Upload Photo
                     </h3>
                     <p className="text-xs text-neutral-500 mt-1 font-normal leading-relaxed">
-                      Select a selfie from your device (JPEG or PNG, min 480px).
+                      Select a clear, front-facing selfie. We&apos;ll find and frame your face (JPEG or PNG, min 480px).
                     </p>
                   </div>
                   <input
@@ -308,9 +342,9 @@ export default function OnboardingCapture() {
                 <div aria-hidden className="pointer-events-none absolute inset-0 flex items-center justify-center">
                   <div
                     className="flex items-center justify-center"
-                    style={{ aspectRatio: '1', [guide.landscape ? 'height' : 'width']: `${guide.ratio * 100}%` }}
+                    style={{ aspectRatio: '1', [guide.landscape ? 'height' : 'width']: `${GUIDE_RATIO * 100}%` }}
                   >
-                    <div className="h-full w-[72%] rounded-[50%] border-2 border-white/90 shadow-[0_0_0_9999px_rgba(0,0,0,0.45)] ring-2 ring-purple-500/80 animate-pulse" />
+                    <div className="h-[86%] w-[66%] rounded-[50%] border-2 border-white/90 shadow-[0_0_0_9999px_rgba(0,0,0,0.45)] ring-2 ring-purple-500/80 animate-pulse" />
                   </div>
                 </div>
 

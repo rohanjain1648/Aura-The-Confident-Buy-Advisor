@@ -116,6 +116,8 @@ describe('describeYouCamError', () => {
   it('turns photo problems into guidance the shopper can act on', () => {
     expect(describeYouCamError(new YouCamError('x', 'error_src_face_too_small'))).toMatch(/closer/i);
     expect(describeYouCamError(new YouCamError('x', 'error_lighting_dark'))).toMatch(/dark/i);
+    expect(describeYouCamError(new YouCamError('x', 'error_face_angle_left_tilt'))).toMatch(/straight/i);
+    expect(describeYouCamError(new YouCamError('x', 'error_no_face'))).toMatch(/find a face/i);
   });
 
   it('flags a rejected API key without echoing it', () => {

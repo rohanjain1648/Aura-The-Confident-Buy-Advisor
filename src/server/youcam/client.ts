@@ -8,9 +8,26 @@ export class YouCamError extends Error {
   }
 }
 
+const FACE_TOO_SMALL = 'Your face looks too small in the photo. Move closer or use a closer photo, then try again.';
+const FACE_OUT_OF_FRAME = 'Part of your face is out of frame. Keep your whole face in view and try again.';
+const FACE_ANGLE = 'Your face is turned or tilted. Look straight at the camera and try again.';
+
 const SHOPPER_MESSAGES: Record<string, string> = {
-  error_src_face_too_small: 'Your face looks too small in the photo. Move closer so it fills the oval, then try again.',
-  error_src_face_out_of_bound: 'Part of your face is out of frame. Centre it in the oval and try again.',
+  error_src_face_too_small: FACE_TOO_SMALL,
+  error_face_position_too_small: FACE_TOO_SMALL,
+  error_src_face_out_of_bound: FACE_OUT_OF_FRAME,
+  error_face_position_out_of_boundary: FACE_OUT_OF_FRAME,
+  error_face_position_invalid: FACE_OUT_OF_FRAME,
+  error_no_face: 'We could not find a face in this photo. Use a clear, front-facing selfie.',
+  error_multiple_people: 'This photo has more than one person in it. Use a selfie of just you.',
+  error_large_face_angle: FACE_ANGLE,
+  error_face_not_forward_facing: FACE_ANGLE,
+  error_face_angle_upward: FACE_ANGLE,
+  error_face_angle_downward: FACE_ANGLE,
+  error_face_angle_leftward: FACE_ANGLE,
+  error_face_angle_rightward: FACE_ANGLE,
+  error_face_angle_left_tilt: FACE_ANGLE,
+  error_face_angle_right_tilt: FACE_ANGLE,
   error_lighting_dark: 'The photo is too dark. Face a window or a light and try again.',
   error_below_min_image_size: 'The photo resolution is too low. Try a sharper photo.',
   error_exceed_max_image_size: 'The photo is too large. Try a smaller one.',

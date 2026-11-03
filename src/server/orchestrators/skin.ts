@@ -18,11 +18,10 @@ export async function analyzeSkinAndSave(
     ? await client.uploadImage(opts.personBytes, contentType, 'person.jpg')
     : fileId;
 
-  // Step 2: Analyze skin and tone in parallel
-  const [skinRaw, toneRaw] = await Promise.all([
-    analyzeSkin(fileId),
-    analyzeSkinTone(fileId),
-  ]);
+  // Step 2: Analyze skin, then tone. Skin analysis has the strictest photo rules, so
+  // running it first means a rejected photo doesn't spend units on tone analysis.
+  const skinRaw = await analyzeSkin(fileId);
+  const toneRaw = await analyzeSkinTone(fileId);
 
   // Step 3: Normalize into SkinPassport
   const passport = normalizePassport({ skinAnalysis: skinRaw, skinTone: toneRaw });

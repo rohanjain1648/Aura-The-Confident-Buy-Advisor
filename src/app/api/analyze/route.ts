@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionId } from '@/middleware';
 import { analyzeSkinAndSave } from '@/server/orchestrators/skin';
-import { describeYouCamError } from '@/server/youcam/client';
+import { describeYouCamError, YouCamError } from '@/server/youcam/client';
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,7 +34,11 @@ export async function POST(request: NextRequest) {
 
           send(controller, { ...result, status: 'complete' });
         } catch (err) {
-          send(controller, { status: 'error', message: describeYouCamError(err) });
+          send(controller, {
+            status: 'error',
+            message: describeYouCamError(err),
+            code: err instanceof YouCamError ? err.code : undefined,
+          });
         } finally {
           controller.close();
         }
